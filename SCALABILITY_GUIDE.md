@@ -553,12 +553,48 @@ Set up PostgreSQL read replicas:
 
 **Cursor Prompt**:
 ```
-Configure CDN for media assets:
-- Set up Cloudflare or AWS CloudFront
-- Configure cache rules (images: 1 year, thumbnails: 30 days)
-- Update media URLs to use CDN
+Configure AWS CloudFront CDN for media assets:
+- Create CloudFront distribution
+- Set origin to S3 bucket
+- Configure cache behaviors (images: 1 year, thumbnails: 30 days)
+- Enable compression
+- Configure custom error pages
+- Update media URLs to use CloudFront domain
 - Test CDN hit rate
-- Monitor CDN performance
+- Monitor CDN performance in CloudWatch
+```
+
+### Step 6: AWS Infrastructure Deployment
+
+**Cursor Prompt**:
+```
+Deploy MediaMesh to AWS:
+- Set up ECS cluster or EKS cluster
+- Deploy services as containers
+- Configure auto-scaling groups
+- Set up Application Load Balancer (ALB)
+- Configure RDS PostgreSQL instances with read replicas
+- Set up ElastiCache Redis cluster
+- Configure MSK Kafka cluster
+- Create S3 buckets for media storage
+- Set up CloudFront CDN
+- Configure CloudWatch monitoring
+- Set up IAM roles and security groups
+- Store secrets in AWS Secrets Manager
+```
+
+### Step 7: DynamoDB Integration
+
+**Cursor Prompt**:
+```
+Integrate DynamoDB for high-performance reads:
+- Create DynamoDB tables: discovery-hot-data, search-index, rate-limits
+- Update Discovery Service to cache hot data in DynamoDB
+- Update Search Service to use DynamoDB for indexes
+- Implement cache-aside pattern with PostgreSQL fallback
+- Configure TTL for automatic data expiration
+- Set up DynamoDB auto-scaling
+- Monitor DynamoDB performance and costs
 ```
 
 ---

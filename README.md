@@ -469,26 +469,44 @@ root
 
 ## 🚢 Deployment
 
-### Docker Deployment
+### Local Development (Docker Compose)
 
 ```bash
 docker compose build
 docker compose up -d
 ```
 
+### AWS Production Deployment
+
+MediaMesh is designed for AWS cloud deployment. See [AWS Deployment Guide](./docs/AWS_DEPLOYMENT.md) for detailed instructions.
+
+**AWS Services Used**:
+- **ECS/EKS**: Container orchestration for microservices
+- **RDS PostgreSQL**: Managed databases for each service
+- **DynamoDB**: High-performance NoSQL for Discovery, Search, and Rate limiting
+- **ElastiCache Redis**: Managed Redis for caching
+- **MSK**: Managed Kafka for event streaming
+- **S3**: Object storage for media assets
+- **CloudFront**: CDN for content delivery
+- **ALB**: Application Load Balancer
+- **CloudWatch**: Monitoring and logging
+
 ### Production Considerations
 
-1. Use strong secrets for JWT and DB credentials
-2. Run gateways behind a load balancer (scale horizontally)
-3. Use managed Postgres/Redis/Kafka where possible
-4. Enable CDN for media assets
-5. Centralize logs + metrics + traces
+1. Use AWS Secrets Manager for JWT and DB credentials
+2. Run gateways behind ALB (scale horizontally with auto-scaling)
+3. Use managed AWS services (RDS, ElastiCache, MSK)
+4. Enable CloudFront CDN for media assets
+5. Centralize logs + metrics + traces in CloudWatch
 6. Configure health checks and readiness probes
+7. Set up VPC with public/private subnets
+8. Implement IAM roles and security groups
 
 ---
 
 ## 🧩 Technology Stack
 
+### Core Technologies
 - **Framework:** NestJS (Node.js)
 - **Language:** TypeScript
 - **Architecture:** Microservices
@@ -496,13 +514,30 @@ docker compose up -d
 - **API Pattern:** Gateway Microservices Pattern
 - **Authentication:** JWT (JSON Web Tokens)
 - **Authorization:** Role-Based Access Control (RBAC)
-- **Caching:** Redis
-- **Rate Limiting:** Redis-backed distributed rate limiter
-- **Content Delivery:** CDN
 - **Process Manager:** PM2
-- **Databases:** PostgreSQL (per service)
-- **Object Storage:** S3/Spaces/MinIO
+
+### Cloud Infrastructure (AWS)
+- **Compute:** ECS/EKS for container orchestration
+- **Databases:** 
+  - RDS PostgreSQL (managed databases per service)
+  - DynamoDB (for Discovery, Search, Rate limiting)
+- **Caching:** ElastiCache Redis
+- **Event Streaming:** MSK (Managed Kafka)
+- **Object Storage:** S3 for media assets
+- **Content Delivery:** CloudFront CDN
+- **Load Balancing:** ALB/NLB
+- **Monitoring:** CloudWatch
+
+### Data & Storage
+- **Primary Databases:** PostgreSQL (User, CMS, Metadata, Media, Ingest services)
+- **NoSQL Database:** DynamoDB (Discovery hot data, Search indexes, Rate limiting)
+- **Caching:** Redis (ElastiCache)
+- **Object Storage:** AWS S3
 - **Search Engine:** OpenSearch/Elasticsearch (planned)
+
+### Additional Services
+- **Rate Limiting:** Redis-backed distributed rate limiter
+- **API Documentation:** Swagger/OpenAPI
 
 ---
 

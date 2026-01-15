@@ -1192,6 +1192,39 @@ Create deployment documentation:
 - Update README with deployment section
 ```
 
+### Step 12.7: AWS Infrastructure Setup
+
+**Cursor Prompt**:
+```
+Set up AWS infrastructure for MediaMesh:
+- Create VPC with public and private subnets
+- Create security groups for ALB, ECS/EKS, RDS, ElastiCache
+- Set up RDS PostgreSQL instances for each service (multi-AZ)
+- Create DynamoDB tables: discovery-hot-data, search-index, rate-limits
+- Set up ElastiCache Redis cluster
+- Create MSK Kafka cluster
+- Create S3 buckets for media assets
+- Set up CloudFront distribution
+- Create Application Load Balancer (ALB)
+- Configure IAM roles and policies
+- Store secrets in AWS Secrets Manager
+```
+
+### Step 12.8: DynamoDB Integration
+
+**Cursor Prompt**:
+```
+Integrate DynamoDB into Discovery and Search services:
+- Install AWS SDK (@aws-sdk/client-dynamodb, @aws-sdk/lib-dynamodb)
+- Create DynamoDB service in shared module
+- Update Discovery Service to use DynamoDB for hot data (popular programs, trending)
+- Update Search Service to use DynamoDB for search indexes
+- Implement cache-aside pattern (DynamoDB → PostgreSQL fallback)
+- Add TTL to DynamoDB items for automatic expiration
+- Configure IAM roles for DynamoDB access
+- Test DynamoDB integration locally with DynamoDB Local
+```
+
 **Validation**:
 - [ ] All services have Dockerfiles
 - [ ] Docker Compose starts all services
@@ -1199,6 +1232,9 @@ Create deployment documentation:
 - [ ] Services can communicate
 - [ ] Environment variables are configured
 - [ ] Health checks work
+- [ ] AWS infrastructure is set up
+- [ ] DynamoDB tables are created and accessible
+- [ ] Services can read/write to DynamoDB
 - [ ] Documentation is complete
 
 ---
