@@ -147,11 +147,11 @@ Use npm workspaces or pnpm workspaces to manage dependencies across services.
 ```
 
 **Validation**:
-- [✅] All services can be generated with NestJS CLI
-- [✅] Docker Compose starts all infrastructure services
-- [✅] PM2 can start services (even if empty)
-- [✅] TypeScript compiles without errors
-- [✅] Shared module can be imported from services
+- ✅ All services can be generated with NestJS CLI
+- ✅ Docker Compose starts all infrastructure services
+- ✅ PM2 can start services (even if empty)
+- ✅ TypeScript compiles without errors
+- ✅ Shared module can be imported from services
 
 ---
 
