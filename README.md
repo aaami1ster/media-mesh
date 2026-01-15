@@ -418,13 +418,29 @@ docker compose up -d postgres redis kafka
 # Step 2: Install Dependencies
 npm install
 
-# Step 3: Build
+# Step 3: Install PM2 globally (if not already installed)
+npm install -g pm2
+
+# Step 4: Build all services
 npm run build
 
-# Step 4: Start Services with PM2
+# Step 5: Copy example config and configure
+cp ecosystem.config.example.js ecosystem.config.js
+# Edit ecosystem.config.js with your environment variables
+
+# Step 6: Start Services with PM2
 pm2 start ecosystem.config.js
 pm2 status
 pm2 logs
+
+# Useful PM2 commands:
+# pm2 stop all              # Stop all services
+# pm2 restart all           # Restart all services
+# pm2 delete all            # Stop and delete all services
+# pm2 logs [service-name]   # View logs for specific service
+# pm2 monit                 # Monitor all services
+# pm2 save                  # Save current process list
+# pm2 startup               # Generate startup script
 ```
 
 ---

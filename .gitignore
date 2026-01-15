@@ -64,12 +64,15 @@ src/core/flyway/flyway.development.toml
 # Local development scripts
 local/
 ecosystem.config.js
+!ecosystem.config.example.js
 
 # Docker
 .dockerignore
 
 # PM2
 .pm2/
+logs/
+*.log
 
 # AWS
 .aws/
