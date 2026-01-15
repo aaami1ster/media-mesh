@@ -1,4 +1,4 @@
-// Shared guards (Auth guards, role guards)
-// TODO: Add guards as needed
-
-export {};
+// Shared guards
+export * from './jwt-auth.guard';
+export * from './roles.guard';
+export * from './jwt.strategy';
