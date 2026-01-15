@@ -11,13 +11,9 @@ A modern, scalable media platform built with **NestJS microservices architecture
 - [Design Decisions](#design-decisions)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [API Documentation](#api-documentation)
-- [Testing](#testing)
 - [Development](#development)
 - [Deployment](#deployment)
-- [Troubleshooting](#troubleshooting)
-- [Recent Updates](#recent-updates)
+- [Technology Stack](#technology-stack)
 - [Future Enhancements & TODOs](#future-enhancements--todos)
 
 ---
@@ -35,7 +31,7 @@ The system is built to be **cloud-native**, **secure**, **resilient**, **observa
 
 - **Microservices Architecture**: Independent services for CMS, Discovery, Metadata, Media, Ingest, Search, and Auth
 - **Gateway Microservices Pattern**: Each client app has its own gateway and security layer
-- **API Versioning**: URL-based versioning (`/api/v1/...`) with backward compatibility strategy
+- **API Versioning**: URL-based versioning (`/api/v1/...`) with backward compatibility
 - **Stateless JWT Authentication**: Token-based authentication without server-side sessions
 - **Role-Based Access Control (RBAC)**: Role-based authorization (ADMIN, EDITOR, USER)
 - **Resilience Patterns**: Circuit breaker and retry mechanisms for inter-service communication
@@ -57,12 +53,12 @@ The system is built to be **cloud-native**, **secure**, **resilient**, **observa
 ## 🏗️ Architecture
 
 ### System Architecture
+
 ```
 ┌────────────────────────────────┐                                                     
 │  Discovery Gateway (Public)    │
 │ (Port 8080)                    │
 └──────────────┬─────────────────┘
-               │
                │
 ┌──────────────▼───────────────┐
 │   Discovery Service          │
@@ -73,7 +69,6 @@ The system is built to be **cloud-native**, **secure**, **resilient**, **observa
 │   discovery_db               │
 │   (e.g., Postgres)           │
 └──────────────────────────────┘
-
 
 ┌──────────────────────────────────────────────────────────────────────┐
 │                           CMS Gateway (Internal)                     │
@@ -104,7 +99,6 @@ The system is built to be **cloud-native**, **secure**, **resilient**, **observa
     │ - Idempotency     │          │ - discovery.events     │
     └─────────┬─────────┘          └─────────────┬──────────┘
               │                                  │
-              │                                  │
     ┌─────────▼──────────┐          ┌─────────────▼──────────┐
     │ Observability      │          │ Resilience Layer       │
     │ - Logs (PM2 + JSON)│          │ - Retries (backoff)    │
@@ -113,87 +107,81 @@ The system is built to be **cloud-native**, **secure**, **resilient**, **observa
     └────────────────────┘          └────────────────────────┘
 ```
 
----
-
 ### Service Responsibilities
 
-#### Discovery Gateway (Port 8080)
-- **Purpose**: Public entry point for end-user apps (Discovery clients)
-- **Responsibilities**:
-  - Request routing to Discovery/Search services
-  - JWT validation (when applicable)
-  - RBAC enforcement for protected endpoints
-  - API versioning (`/api/v1/...`)
-  - Rate limiting for critical/public endpoints (Redis)
-  - REST + GraphQL API exposure
-  - Swagger/OpenAPI docs + Postman collection
-  - Resilience (timeouts, retry, circuit breaker)
+#### Gateways
 
-#### CMS Gateway (Port 8081)
-- **Purpose**: Internal entry point for CMS admins/editors
-- **Responsibilities**:
-  - JWT validation and RBAC (ADMIN/EDITOR)
-  - Routing to CMS/Metadata/Media/Ingest
-  - Rate limiting for write-heavy endpoints (Redis)
-  - API versioning and documentation
-  - Resilience (timeouts, retry, circuit breaker)
+**Discovery Gateway (Port 8080)**
+- Public entry point for end-user apps (Discovery clients)
+- Request routing to Discovery/Search services
+- JWT validation (when applicable) and RBAC enforcement
+- API versioning (`/api/v1/...`)
+- Rate limiting for critical/public endpoints (Redis)
+- REST + GraphQL API exposure
+- Swagger/OpenAPI docs + Postman collection
+- Resilience (timeouts, retry, circuit breaker)
 
-#### Auth Service (Port 8086)
-- **Purpose**: Authentication and authorization support
-- **Responsibilities**:
-  - User login and token issuance (JWT)
-  - Role management (ADMIN, EDITOR, USER)
-  - Password hashing/verification
-  - Optional token configuration and expiration policies
-  - Publishes auth/user lifecycle events (Kafka)
-  - Database: `auth_db`
+**CMS Gateway (Port 8081)**
+- Internal entry point for CMS admins/editors
+- JWT validation and RBAC (ADMIN/EDITOR)
+- Routing to CMS/Metadata/Media/Ingest
+- Rate limiting for write-heavy endpoints (Redis)
+- API versioning and documentation
+- Resilience (timeouts, retry, circuit breaker)
 
-#### CMS Service (Port 8082)
-- **Purpose**: Program/Episode management (internal)
-- **Responsibilities**:
-  - CRUD for programs and episodes
-  - Publishing workflow (draft/published)
-  - Emits events (`content.created`, `content.updated`, `content.published`)
-  - Database: `cms_db`
+#### Core Services
 
-#### Metadata Service (Port 8083)
-- **Purpose**: Metadata ownership and validation
-- **Responsibilities**:
-  - Stores/validates metadata (title, description, category, language, duration, publish date)
-  - Ensures consistent schema and versioning
-  - Database: `metadata_db`
+**Auth Service (Port 8086)**
+- User login and token issuance (JWT)
+- Role management (ADMIN, EDITOR, USER)
+- Password hashing/verification
+- Token configuration and expiration policies
+- Publishes auth/user lifecycle events (Kafka)
+- Database: `auth_db`
 
-#### Media Service (Port 8084)
-- **Purpose**: Media assets management
-- **Responsibilities**:
-  - Handles thumbnails, assets, and storage references
-  - Integrates with Object Storage and CDN
-  - Database: `media_db` + Object Storage (S3/Spaces/MinIO)
+**CMS Service (Port 8082)**
+- CRUD for programs and episodes
+- Publishing workflow (draft/published)
+- Emits events (`content.created`, `content.updated`, `content.published`)
+- Database: `cms_db`
 
-#### Ingest Service (Port 8085)
-- **Purpose**: Import content from external sources
-- **Responsibilities**:
-  - Connects to external sources (YouTube/RSS/APIs)
-  - Normalizes imported data into internal models
-  - Emits ingest events (`ingest.completed`, `ingest.failed`)
-  - Database: `ingest_db`
+**Metadata Service (Port 8083)**
+- Stores/validates metadata (title, description, category, language, duration, publish date)
+- Ensures consistent schema and versioning
+- Database: `metadata_db`
 
-#### Search/Indexing Service (Port 8091)
-- **Purpose**: Builds/updates the search index
-- **Responsibilities**:
-  - Consumes Kafka events and updates search indexes
-  - Supports fast queries for Discovery
-  - Database: `search_db` and/or Search Engine (OpenSearch/Elasticsearch)
+**Media Service (Port 8084)**
+- Handles thumbnails, assets, and storage references
+- Integrates with Object Storage and CDN
+- Database: `media_db` + Object Storage (S3/Spaces/MinIO)
+
+**Ingest Service (Port 8085)**
+- Connects to external sources (YouTube/RSS/APIs)
+- Normalizes imported data into internal models
+- Emits ingest events (`ingest.completed`, `ingest.failed`)
+- Database: `ingest_db`
+
+**Discovery Service (Port 8090)**
+- Public search and browse APIs
+- Database: `discovery_db`
+
+**Search/Indexing Service (Port 8091)**
+- Consumes Kafka events and updates search indexes
+- Supports fast queries for Discovery
+- Database: `search_db` and/or Search Engine (OpenSearch/Elasticsearch)
 
 ### Shared Module
 
-The `shared` module contains:
+The `shared` module contains reusable components used across all services:
+
 - **DTOs & Contracts**: Shared schemas for requests/responses and inter-service payloads
 - **Kafka Events**: Event types, versioning, and serializers
 - **Guards & Decorators**: RBAC helpers, JWT utilities, request context decorators
 - **Resilience Utilities**: retry/backoff and circuit breaker wrappers/interceptors
 - **Observability Utilities**: correlation/trace ID propagation, structured log helpers
 - **Common Tools**: errors, constants, pagination helpers, validation utilities
+
+This ensures consistent behavior and reduces duplicated logic.
 
 ---
 
@@ -229,6 +217,8 @@ The `shared` module contains:
 - **Microservices Friendly**: Gateways/services can validate tokens consistently
 - **Simplicity**: Fewer moving parts and easier deployment
 
+**Implementation**: Tokens validated at the gateway layer. See [Security](#security) section for details.
+
 ### 4. Role-Based Access Control (RBAC)
 
 **Decision**: Role-based access control with well-defined roles (ADMIN, EDITOR, USER).
@@ -238,13 +228,20 @@ The `shared` module contains:
 - **Clear Separation**: CMS roles (ADMIN/EDITOR) vs Discovery users (USER)
 - **Extensible**: Easy to add new roles and permissions later
 
+**Roles**:
+- `ADMIN`: Full system access
+- `EDITOR`: Content creation and management
+- `USER`: Read-only access to Discovery APIs
+
+Authorization enforced at both gateway and service levels.
+
 ### 5. Database per Service
 
 **Decision**: Each microservice owns its database.
 
 **Rationale**:
-- **Data Isolation**: Services do not directly access each other’s schema
-- **Independent Deployment**: Schema changes don’t break other services
+- **Data Isolation**: Services do not directly access each other's schema
+- **Independent Deployment**: Schema changes don't break other services
 - **Scaling**: Different databases can scale independently
 - **Flexibility**: Each service can choose the best persistence approach
 
@@ -257,9 +254,9 @@ The `shared` module contains:
 - **Migration Path**: Clients upgrade at their own pace
 - **Clarity**: `/api/v1/...` is explicit and easy to manage
 
-**Example**:
-- GET /api/v1/discovery/search
-- POST /api/v1/cms/programs
+**Examples**:
+- `GET /api/v1/discovery/search`
+- `POST /api/v1/cms/programs`
 
 ### 7. REST + GraphQL + Documentation
 
@@ -280,6 +277,11 @@ The `shared` module contains:
 - **Stability**: Fail fast when dependency is unhealthy
 - **Better UX**: Retries handle transient network/service issues
 - **Operational Safety**: Prevent overload on already failing services
+
+**Implementation**:
+- **Retries**: Controlled retries with exponential backoff for transient failures
+- **Circuit Breaker**: Stops calls to failing services, automatically recovers when healthy
+- Applied at gateway and inter-service communication layers
 
 ### 9. Event-Driven Architecture with Kafka
 
@@ -305,6 +307,8 @@ The `shared` module contains:
 - **Reduced DB Load**: Minimizes repeated database queries
 - **Scalable**: Shared cache across multiple instances
 
+**Implementation**: See [Performance Optimization](#performance-optimization) section.
+
 ### 11. Rate Limiting
 
 **Decision**: Redis-based distributed rate limiting for critical APIs.
@@ -314,10 +318,11 @@ The `shared` module contains:
 - **Stability**: Prevent traffic spikes from exhausting resources
 - **Distributed**: Works across multiple gateway instances
 
-**Typical targets**:
-- `POST /auth/login`
-- CMS write-heavy endpoints (publish/update)
-- High-cost discovery search endpoints
+**Implementation**:
+- **Strategy**: Token-bucket / sliding-window style
+- **Enforcement**: Primarily at API Gateway layer
+- **Dimensions**: User ID, IP address, or client type (CMS vs Discovery)
+- **Targets**: Authentication endpoints, CMS write operations, expensive discovery search endpoints
 
 ### 12. Observability (Logs, Metrics, Tracing)
 
@@ -327,6 +332,11 @@ The `shared` module contains:
 - **Logs**: Structured logs (JSON) with correlation IDs for debugging
 - **Metrics**: Request count/latency/error rate and Kafka consumer lag
 - **Tracing**: Trace IDs propagated across services and Kafka messages
+
+**Implementation**:
+- **Logging**: Structured JSON logs with request identifiers, service name, timestamp, and log level. PM2 aggregates logs per service.
+- **Metrics**: Request count, response time, error rate, Kafka consumer lag
+- **Distributed Tracing**: Unique trace IDs propagated across gateways, services, and Kafka events
 
 ### 13. PM2 Process Management
 
@@ -355,7 +365,7 @@ The `shared` module contains:
 
 ### Required Software
 
-- **Node.js 20+** (or 18+ LTS)
+- **Node.js 20+**
 - **pnpm / npm / yarn** (choose one)
 - **Docker** and **Docker Compose**
 - **PostgreSQL 16+** (if running locally)
@@ -367,14 +377,17 @@ The `shared` module contains:
   ```
 
 ### Optional Tools
+
 - Postman for API testing
 - Kafka UI for topic monitoring
 - pgAdmin / TablePlus for database management
 
 ---
+
 ## 🚀 Quick Start
 
 ### Option 1: Docker Compose (Recommended)
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -390,21 +403,20 @@ docker compose ps
 docker compose logs -f discovery-gateway
 ```
 
-Services (example):
+**Service Endpoints**:
 - Discovery Gateway: http://localhost:8080
 - CMS Gateway: http://localhost:8081
-- Swagger: http://localhost:8080/docs  (or /api/docs depending on your setup)
+- Swagger: http://localhost:8080/docs (or /api/docs depending on your setup)
 - Kafka UI: http://localhost:8090 (if enabled)
 
 ### Option 2: Local Development with PM2
+
 ```bash
 # Step 1: Start Infrastructure
 docker compose up -d postgres redis kafka
 
-
 # Step 2: Install Dependencies
 npm install
-
 
 # Step 3: Build
 npm run build
@@ -414,11 +426,13 @@ pm2 start ecosystem.config.js
 pm2 status
 pm2 logs
 ```
+
 ---
 
 ## 💻 Development
 
 ### Project Structure
+
 ```
 root
 ├── services
@@ -444,27 +458,32 @@ root
 ```
 
 ### Development Workflow
+
 1. Create a feature branch
-1. Implement changes with SOLID and clear module boundaries
-1. Add/extend tests
-1. Update Swagger docs + Postman collection if APIs change
-1. Run test suite before merging
+2. Implement changes with SOLID and clear module boundaries
+3. Add/extend tests
+4. Update Swagger docs + Postman collection if APIs change
+5. Run test suite before merging
 
 ---
+
 ## 🚢 Deployment
+
 ### Docker Deployment
+
 ```bash
 docker compose build
 docker compose up -d
 ```
 
 ### Production Considerations
+
 1. Use strong secrets for JWT and DB credentials
-1. Run gateways behind a load balancer (scale horizontally)
-1. Use managed Postgres/Redis/Kafka where possible
-1. Enable CDN for media assets
-1. Centralize logs + metrics + traces
-1. Configure health checks and readiness probes
+2. Run gateways behind a load balancer (scale horizontally)
+3. Use managed Postgres/Redis/Kafka where possible
+4. Enable CDN for media assets
+5. Centralize logs + metrics + traces
+6. Configure health checks and readiness probes
 
 ---
 
@@ -477,225 +496,56 @@ docker compose up -d
 - **API Pattern:** Gateway Microservices Pattern
 - **Authentication:** JWT (JSON Web Tokens)
 - **Authorization:** Role-Based Access Control (RBAC)
-- **Caching:** Redis / in-memory cache
+- **Caching:** Redis
 - **Rate Limiting:** Redis-backed distributed rate limiter
 - **Content Delivery:** CDN
 - **Process Manager:** PM2
+- **Databases:** PostgreSQL (per service)
+- **Object Storage:** S3/Spaces/MinIO
+- **Search Engine:** OpenSearch/Elasticsearch (planned)
 
 ---
 
-## 🔐 Security Design
+## 🔐 Security
 
 ### Authentication
-- JWT-based authentication
-- Stateless token validation
-- Tokens validated at the gateway layer
+
+- **JWT-based authentication**: Stateless token validation
+- **Token validation**: Performed at the gateway layer
+- **No server-side sessions**: Enables horizontal scaling
 
 ### Authorization
-- Role-based access control (RBAC)
-- Example roles:
-  - `ADMIN`
-  - `EDITOR`
-  - `USER`
-- Authorization enforced at both gateway and service levels
 
----
-
-## 🌐 Gateway Microservices Pattern
-
-Each client-facing application communicates through its own dedicated API Gateway.
-
-### Gateways Responsibilities
-- Authentication and authorization
-- Request validation
-- API routing to internal services
-- Security isolation per client
-
-### Examples
-- CMS Admin Gateway
-- Public Discovery Gateway
-
-This pattern allows each client application to evolve independently while maintaining strong security boundaries.
-
----
-
-## 🔄 Event-Driven Communication (Kafka)
-
-Kafka is used for asynchronous communication between services.
-
-### Example Events
-- `content.created`
-- `content.updated`
-- `content.published`
-- `ingest.completed`
-
-### Benefits
-- Loose coupling between services
-- High scalability
-- Reliable message delivery
-- Better fault tolerance
-
----
-## 🚦 Rate Limiting (Redis-backed)
-
-MediaMesh protects critical APIs using **distributed rate limiting** backed by **Redis**.
-
-### Why Redis?
-In a microservices / cloud environment, multiple gateway instances may run in parallel.  
-Redis provides a shared, centralized store so rate limits remain consistent across all instances.
-
-### Where Rate Limiting Is Applied
-Rate limiting is enforced primarily at the **API Gateway layer**, because:
-- It blocks abusive traffic early (before hitting internal services)
-- It reduces load and protects downstream dependencies
-- It keeps rules client-specific (CMS vs Discovery)
-
-### Suitable Rate Limiting Approach
-A token-bucket / sliding-window style strategy is used to:
-- Allow short bursts
-- Enforce steady limits over time
-- Provide fairness across users
-
-### Example Use Cases (Critical APIs)
-- Authentication endpoints (login, token refresh)
-- CMS write operations (create/update/publish content)
-- Expensive discovery operations (search endpoints)
-
-### Limiting Dimensions
-Depending on the endpoint, limits can be applied by:
-- **User ID** (authenticated users)
-- **IP address** (unauthenticated or public endpoints)
-- **Client type** (CMS vs Discovery)
-
-### Benefits
-- Prevents brute-force attempts and abuse
-- Protects system availability
-- Reduces infrastructure costs
-- Improves overall platform stability
-
----
-
-## 🛡 Resilience & Fault Tolerance
-
-MediaMesh is designed to be **resilient to failures** in a distributed system environment.
-
-### Retries
-- Temporary failures between services are handled using controlled retries
-- Retry mechanisms are applied with limits and backoff strategies
-- Prevents failures caused by transient network or service issues
-
-### Circuit Breaker
-- Circuit breakers are used to prevent cascading failures
-- If a downstream service becomes unavailable:
-  - Calls are stopped temporarily
-  - The system fails fast instead of overwhelming the failing service
-- Services automatically recover once the downstream service becomes healthy again
-
-### Why This Matters
-- Improves system stability
-- Prevents total system outages
-- Ensures better user experience even during partial failures
-
----
-
-## 🔍 Observability (Logs, Metrics, Tracing)
-
-Observability is a core design goal in MediaMesh to ensure system health, performance visibility, and fast issue diagnosis in a distributed environment.
-
-### 📄 Logging
-- Each microservice produces structured logs
-- Logs include:
-  - Request identifiers
-  - Service name
-  - Timestamp
-  - Log level (info, warning, error)
-- PM2 is used to:
-  - Aggregate logs per service
-  - View logs in real time
-  - Persist logs for troubleshooting
-
-**Purpose:**
-- Debug errors
-- Trace user requests
-- Investigate service failures
-
-### 📊 Metrics
-- Each service exposes basic operational metrics, such as:
-  - Request count
-  - Response time
-  - Error rate
-  - Kafka consumer lag
-- Metrics allow monitoring of:
-  - Service health
-  - System performance
-  - Resource usage
-
-**Purpose:**
-- Detect performance degradation
-- Monitor traffic and load
-- Support scaling decisions
-
-### 🧵 Distributed Tracing
-- Each incoming request is assigned a unique **trace identifier**
-- The trace ID is propagated across:
-  - API gateways
-  - Internal services
-  - Kafka events
-- This enables tracking a single request across multiple services
-
-**Purpose:**
-- Understand request flow end-to-end
-- Identify bottlenecks
-- Diagnose latency issues in distributed systems
-
-### Why Observability Matters
-- Faster debugging and incident resolution
-- Better understanding of system behavior
-- Increased reliability and confidence in production
-- Essential for microservices-based systems
-
----
-
-## 📦 Shared Module
-
-The `shared` module contains reusable components used across all services:
-
-- DTOs and interfaces
-- Kafka event schemas
-- Utility functions
-- Common constants
-- Guards and decorators
-- Resilience and observability utilities
-
-This ensures consistent behavior and reduces duplicated logic.
-
----
-
-## ⚙️ Service Management with PM2
-
-PM2 is used as the **process manager** for running and managing all microservices.
-
-### PM2 Responsibilities
-- Start and stop services
-- Automatically restart failed services
-- Centralized logging per service
-- Process monitoring and stability
-
-PM2 helps keep MediaMesh services running reliably in both development and production environments.
+- **Role-Based Access Control (RBAC)**: Enforced at gateway and service levels
+- **Roles**: ADMIN, EDITOR, USER (see [Design Decisions](#4-role-based-access-control-rbac) for details)
 
 ---
 
 ## ⚡ Performance Optimization
 
 ### Caching
-- Frequently accessed data cached to reduce database load
-- Improves response time for discovery and search operations
+
+- **Strategy**: Cache-aside pattern with TTL
+- **Primary Use**: Hot-read caching for discovery/search operations
+- **Benefits**: Reduces database load and improves response times
 
 ### CDN
-- Static assets and media files served via CDN
-- Reduces latency
-- Improves global content delivery
 
+- **Purpose**: Serve static assets and media files
+- **Benefits**: Reduces latency and improves global content delivery
+
+### Scalability
+
+For detailed information on achieving **10M users/hour** load, see the [Scalability Guide](./SCALABILITY_GUIDE.md).
+
+**Key Strategies**:
+- Horizontal scaling of gateways and services
+- Redis cluster for distributed caching (95%+ hit rate target)
+- Database read replicas for read-heavy workloads
+- CDN for media assets (90%+ traffic offloaded)
+- Kafka for event processing and load smoothing
+- Elasticsearch/OpenSearch for production-grade search
+- **CQRS pattern** for read/write separation (see [Design Patterns Guide](./DESIGN_PATTERNS_GUIDE.md))
 
 ---
 
@@ -703,40 +553,40 @@ PM2 helps keep MediaMesh services running reliably in both development and produ
 
 ### High Priority
 
-1. Event Outbox Pattern (Consistency Guarantee)
-    - Add outbox table per service for guaranteed event publishing
-    - Ensure business transaction + event persistence are atomic
-    - Add outbox worker / CDC integration
+1. **Event Outbox Pattern (Consistency Guarantee)**
+   - Add outbox table per service for guaranteed event publishing
+   - Ensure business transaction + event persistence are atomic
+   - Add outbox worker / CDC integration
 
-2. Full Search Engine Integration
-    - Integrate OpenSearch/Elasticsearch for production-grade search
-    - Add analyzers for Arabic/English text and advanced ranking
+2. **Full Search Engine Integration**
+   - Integrate OpenSearch/Elasticsearch for production-grade search
+   - Add analyzers for Arabic/English text and advanced ranking
 
-3. Advanced Observability
-    - OpenTelemetry end-to-end tracing visualization
-    - Prometheus + Grafana dashboards
-    - Alerting for errors, latency, circuit breaker status, and consumer lag
+3. **Advanced Observability**
+   - OpenTelemetry end-to-end tracing visualization
+   - Prometheus + Grafana dashboards
+   - Alerting for errors, latency, circuit breaker status, and consumer lag
 
 ### Medium Priority
 
-4. Recommendation & Personalization
-    - Trending, popular, and recommended content
-    - Personalized feed (optional auth)
+4. **Recommendation & Personalization**
+   - Trending, popular, and recommended content
+   - Personalized feed (optional auth)
 
-5. Advanced Caching
-    - Event-driven cache invalidation
-    - Cache warming and multi-layer caching strategies
+5. **Advanced Caching**
+   - Event-driven cache invalidation
+   - Cache warming and multi-layer caching strategies
 
-6. Security Enhancements
-    - OAuth2/OIDC integration (optional)
-    - API key management for external ingestion sources
-    - Fine-grained permissions (scopes/claims)
+6. **Security Enhancements**
+   - OAuth2/OIDC integration (optional)
+   - API key management for external ingestion sources
+   - Fine-grained permissions (scopes/claims)
 
 ### Low Priority
 
-7. API v2 Planning
-    - Introduce breaking changes safely via /api/v2/...
-    - Deprecation roadmap and migration guide
+7. **API v2 Planning**
+   - Introduce breaking changes safely via /api/v2/...
+   - Deprecation roadmap and migration guide
 
 ---
 
