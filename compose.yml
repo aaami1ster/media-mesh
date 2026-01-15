@@ -1,5 +1,6 @@
 services:
-  # PostgreSQL Database
+  # PostgreSQL 16 Database Server
+  # Single PostgreSQL instance hosting multiple databases (Database per Service pattern)
   postgres:
     image: postgres:16-alpine
     container_name: mediamesh-postgres
@@ -8,27 +9,32 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      # Database names (created via init script)
+      POSTGRES_MULTIPLE_DATABASES: auth_db,cms_db,metadata_db,media_db,discovery_db,ingest_db,search_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+      - ./docker/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     networks:
       - mediamesh-network
 
-  # Redis Cache
+  # Redis 7 Cache and Rate Limiting
   redis:
     image: redis:7-alpine
     container_name: mediamesh-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
     healthcheck:
@@ -36,10 +42,11 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+      start_period: 10s
     networks:
       - mediamesh-network
 
-  # Kafka Broker
+  # Kafka Broker for Event Streaming
   broker:
     image: confluentinc/cp-kafka:7.6.0
     container_name: mediamesh-kafka
@@ -62,6 +69,8 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     healthcheck:
       test:
         [
@@ -75,13 +84,13 @@ services:
     networks:
       - mediamesh-network
 
-  # Kafka UI
+  # Kafka UI for Monitoring (Port 8090)
   kafka-ui:
     container_name: mediamesh-kafka-ui
     image: provectuslabs/kafka-ui:latest
     restart: unless-stopped
     ports:
-      - "8090:8080"
+      - "8090:8080"  # Host port 8090 maps to container port 8080
     depends_on:
       broker:
         condition: service_healthy
@@ -90,8 +99,8 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
       DYNAMIC_CONFIG_ENABLED: "true"
       AUTH_TYPE: "LOGIN_FORM"
-      SPRING_SECURITY_USER_NAME: admin
-      SPRING_SECURITY_USER_PASSWORD: pass
+      SPRING_SECURITY_USER_NAME: ${KAFKA_UI_USER:-admin}
+      SPRING_SECURITY_USER_PASSWORD: ${KAFKA_UI_PASSWORD:-admin}
     healthcheck:
       test:
         [
@@ -387,7 +396,7 @@ services:
     environment:
       # Server Configuration
       NODE_ENV: production
-      PORT: 8090
+      PORT: 8092
 
       # Database Configuration
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/discovery_db
@@ -406,7 +415,7 @@ services:
       REDIS_TTL_TRENDING: 600 # 10 minutes
 
     ports:
-      - "8090:8090"
+      - "8092:8092"
     depends_on:
       postgres:
         condition: service_healthy
@@ -420,7 +429,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:8090/health",
+          "http://localhost:8092/health",
         ]
       interval: 30s
       timeout: 10s
@@ -491,7 +500,7 @@ services:
       PORT: 8080
 
       # Service URLs
-      SERVICES_DISCOVERY_URL: http://discovery-service:8090
+      SERVICES_DISCOVERY_URL: http://discovery-service:8092
       SERVICES_SEARCH_URL: http://search-service:8091
 
       # JWT Configuration
@@ -615,11 +624,20 @@ services:
 # Or use: docker compose build
 
 volumes:
+  # PostgreSQL data persistence
   postgres_data:
     driver: local
+  # Redis data persistence
   redis_data:
+    driver: local
+  # Kafka data persistence
+  kafka_data:
     driver: local
 
 networks:
+  # Bridge network for all services to communicate
   mediamesh-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
