@@ -1,0 +1,22 @@
+{
+  "name": "@mediamesh/shared",
+  "version": "0.0.1",
+  "description": "Shared modules for MediaMesh microservices",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint \"**/*.ts\" --fix"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3"
+  }
+}

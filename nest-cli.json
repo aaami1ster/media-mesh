@@ -1,8 +1,95 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "services",
+  "monorepo": true,
+  "root": "services",
   "compilerOptions": {
+    "webpack": false,
+    "tsConfigPath": "services/api-gateway-discovery/tsconfig.json",
     "deleteOutDir": true
+  },
+  "projects": {
+    "api-gateway-discovery": {
+      "type": "application",
+      "root": "services/api-gateway-discovery",
+      "entryFile": "main",
+      "sourceRoot": "services/api-gateway-discovery/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/api-gateway-discovery/tsconfig.json"
+      }
+    },
+    "api-gateway-cms": {
+      "type": "application",
+      "root": "services/api-gateway-cms",
+      "entryFile": "main",
+      "sourceRoot": "services/api-gateway-cms/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/api-gateway-cms/tsconfig.json"
+      }
+    },
+    "auth-service": {
+      "type": "application",
+      "root": "services/auth-service",
+      "entryFile": "main",
+      "sourceRoot": "services/auth-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/auth-service/tsconfig.json"
+      }
+    },
+    "cms-service": {
+      "type": "application",
+      "root": "services/cms-service",
+      "entryFile": "main",
+      "sourceRoot": "services/cms-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/cms-service/tsconfig.json"
+      }
+    },
+    "metadata-service": {
+      "type": "application",
+      "root": "services/metadata-service",
+      "entryFile": "main",
+      "sourceRoot": "services/metadata-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/metadata-service/tsconfig.json"
+      }
+    },
+    "media-service": {
+      "type": "application",
+      "root": "services/media-service",
+      "entryFile": "main",
+      "sourceRoot": "services/media-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/media-service/tsconfig.json"
+      }
+    },
+    "ingest-service": {
+      "type": "application",
+      "root": "services/ingest-service",
+      "entryFile": "main",
+      "sourceRoot": "services/ingest-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/ingest-service/tsconfig.json"
+      }
+    },
+    "discovery-service": {
+      "type": "application",
+      "root": "services/discovery-service",
+      "entryFile": "main",
+      "sourceRoot": "services/discovery-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/discovery-service/tsconfig.json"
+      }
+    },
+    "search-service": {
+      "type": "application",
+      "root": "services/search-service",
+      "entryFile": "main",
+      "sourceRoot": "services/search-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/search-service/tsconfig.json"
+      }
+    }
   }
 }

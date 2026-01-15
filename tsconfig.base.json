@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@shared/*": ["shared/*"],
+      "@shared/dto": ["shared/dto"],
+      "@shared/events": ["shared/events"],
+      "@shared/guards": ["shared/guards"],
+      "@shared/decorators": ["shared/decorators"],
+      "@shared/utils": ["shared/utils"],
+      "@shared/constants": ["shared/constants"],
+      "@shared/resilience": ["shared/resilience"],
+      "@shared/observability": ["shared/observability"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

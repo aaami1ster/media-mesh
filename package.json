@@ -1,23 +1,28 @@
 {
   "name": "media-mesh",
   "version": "0.0.1",
-  "description": "",
+  "description": "MediaMesh Platform - CMS + Discovery Microservices",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "workspaces": [
+    "services/*",
+    "shared"
+  ],
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "build:all": "npm run build --workspaces",
+    "format": "prettier --write \"services/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\"",
+    "lint": "eslint \"{services,shared,test}/**/*.ts\" --fix",
+    "lint:all": "npm run lint --workspaces",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
+    "test:all": "npm run test --workspaces",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -53,21 +58,27 @@
     "typescript-eslint": "^8.20.0"
   },
   "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "services/**/*.(t|j)s",
+      "shared/**/*.(t|j)s",
+      "!**/*.spec.ts",
+      "!**/node_modules/**"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@shared/(.*)$": "<rootDir>/shared/$1"
+    },
+    "projects": [
+      "<rootDir>/services/*",
+      "<rootDir>/shared"
+    ]
   },
   "overrides": {
     "diff": "^8.0.3"
