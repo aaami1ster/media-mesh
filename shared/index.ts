@@ -6,3 +6,4 @@ export * from './guards';
 export * from './utils';
 export * from './resilience';
 export * from './observability';
+export * from './exceptions';
