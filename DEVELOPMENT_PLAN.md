@@ -281,10 +281,10 @@ Export all constants.
 **Validation**:
 - [x] All shared modules compile
 - [x] DTOs have proper validation
-- [ ] Guards can be used in services
-- [ ] Event schemas are defined
-- [ ] Observability utilities work
-- [ ] Resilience utilities are testable
+- [x] Guards can be used in services
+- [x] Event schemas are defined
+- [x] Observability utilities work
+- [x] Resilience utilities are testable
 
 ---
 
