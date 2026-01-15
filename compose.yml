@@ -1,0 +1,625 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: mediamesh-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mediamesh-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: mediamesh-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - mediamesh-network
+
+  # Kafka Broker
+  broker:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: mediamesh-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:29093
+      KAFKA_LISTENERS: PLAINTEXT://broker:29092,CONTROLLER://broker:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mediamesh-network
+
+  # Kafka UI
+  kafka-ui:
+    container_name: mediamesh-kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    depends_on:
+      broker:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+      DYNAMIC_CONFIG_ENABLED: "true"
+      AUTH_TYPE: "LOGIN_FORM"
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: pass
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mediamesh-network
+
+  # Auth Service
+  auth-service:
+    image: mediamesh:latest
+    command: node services/auth-service/dist/main.js
+    container_name: mediamesh-auth-service
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8086
+
+      # Database Configuration
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: auth_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+
+      # Kafka Configuration
+      KAFKA_BROKER: broker:29092
+      KAFKA_CLIENT_ID: auth-service
+
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
+
+    ports:
+      - "8086:8086"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8086/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+  # CMS Service
+  cms-service:
+    image: mediamesh:latest
+    command: node services/cms-service/dist/main.js
+    container_name: mediamesh-cms-service
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8082
+
+      # Database Configuration
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cms_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: cms_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+
+      # Kafka Configuration
+      KAFKA_BROKER: broker:29092
+      KAFKA_CLIENT_ID: cms-service
+      KAFKA_TOPIC_CONTENT_CREATED: content.created
+      KAFKA_TOPIC_CONTENT_UPDATED: content.updated
+      KAFKA_TOPIC_CONTENT_PUBLISHED: content.published
+
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8082/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+  # Metadata Service
+  metadata-service:
+    image: mediamesh:latest
+    command: node services/metadata-service/dist/main.js
+    container_name: mediamesh-metadata-service
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8083
+
+      # Database Configuration
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/metadata_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: metadata_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8083/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+  # Media Service
+  media-service:
+    image: mediamesh:latest
+    command: node services/media-service/dist/main.js
+    container_name: mediamesh-media-service
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8084
+
+      # Database Configuration
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/media_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: media_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+
+      # Object Storage Configuration (MinIO for local dev)
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-mediamesh-media}
+      S3_REGION: ${S3_REGION:-us-east-1}
+
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8084/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+  # Ingest Service
+  ingest-service:
+    image: mediamesh:latest
+    command: node services/ingest-service/dist/main.js
+    container_name: mediamesh-ingest-service
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8085
+
+      # Database Configuration
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ingest_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ingest_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+
+      # Kafka Configuration
+      KAFKA_BROKER: broker:29092
+      KAFKA_CLIENT_ID: ingest-service
+      KAFKA_TOPIC_INGEST_COMPLETED: ingest.completed
+      KAFKA_TOPIC_INGEST_FAILED: ingest.failed
+
+    ports:
+      - "8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8085/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+  # Discovery Service
+  discovery-service:
+    image: mediamesh:latest
+    command: node services/discovery-service/dist/main.js
+    container_name: mediamesh-discovery-service
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8090
+
+      # Database Configuration
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/discovery_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: discovery_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_TTL_PROGRAMS: 1800 # 30 minutes
+      REDIS_TTL_SEARCH: 300 # 5 minutes
+      REDIS_TTL_TRENDING: 600 # 10 minutes
+
+    ports:
+      - "8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8090/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+  # Search Service
+  search-service:
+    image: mediamesh:latest
+    command: node services/search-service/dist/main.js
+    container_name: mediamesh-search-service
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8091
+
+      # Database Configuration
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/search_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: search_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+      # Kafka Configuration
+      KAFKA_BROKER: broker:29092
+      KAFKA_CLIENT_ID: search-service
+      KAFKA_GROUP_ID: search-service-group
+      KAFKA_TOPIC_CONTENT_EVENTS: content.events
+      KAFKA_TOPIC_INGEST_EVENTS: ingest.events
+
+    ports:
+      - "8091:8091"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8091/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+  # Discovery Gateway
+  discovery-gateway:
+    image: mediamesh:latest
+    command: node services/api-gateway-discovery/dist/main.js
+    container_name: mediamesh-discovery-gateway
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8080
+
+      # Service URLs
+      SERVICES_DISCOVERY_URL: http://discovery-service:8090
+      SERVICES_SEARCH_URL: http://search-service:8091
+
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
+
+      # Rate Limiting Configuration
+      RATE_LIMIT_TTL: 60 # seconds
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100} # requests per window
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60} # seconds
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+
+      # Kafka Configuration (for events)
+      KAFKA_BROKER: broker:29092
+      KAFKA_CLIENT_ID: discovery-gateway
+
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+  # CMS Gateway
+  cms-gateway:
+    image: mediamesh:latest
+    command: node services/api-gateway-cms/dist/main.js
+    container_name: mediamesh-cms-gateway
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 8081
+
+      # Service URLs
+      SERVICES_AUTH_URL: http://auth-service:8086
+      SERVICES_CMS_URL: http://cms-service:8082
+      SERVICES_METADATA_URL: http://metadata-service:8083
+      SERVICES_MEDIA_URL: http://media-service:8084
+      SERVICES_INGEST_URL: http://ingest-service:8085
+
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
+
+      # Rate Limiting Configuration
+      RATE_LIMIT_TTL: 60 # seconds
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-50} # requests per window (lower for write operations)
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60} # seconds
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+
+      # Kafka Configuration
+      KAFKA_BROKER: broker:29092
+      KAFKA_CLIENT_ID: cms-gateway
+
+    ports:
+      - "8081:8081"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      cms-service:
+        condition: service_healthy
+      metadata-service:
+        condition: service_healthy
+      media-service:
+        condition: service_healthy
+      ingest-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8081/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mediamesh-network
+    restart: unless-stopped
+
+# Build the image first: docker build -t mediamesh:latest .
+# Or use: docker compose build
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  mediamesh-network:
+    driver: bridge
