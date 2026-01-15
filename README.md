@@ -62,7 +62,7 @@ The system is built to be **cloud-native**, **secure**, **resilient**, **observa
                │
 ┌──────────────▼───────────────┐
 │   Discovery Service          │
-│   (Port 8090)                │
+│   (Port 8092)                │
 └─────────────┬────────────────┘
               │
 ┌─────────────▼────────────────┐
@@ -161,7 +161,7 @@ The system is built to be **cloud-native**, **secure**, **resilient**, **observa
 - Emits ingest events (`ingest.completed`, `ingest.failed`)
 - Database: `ingest_db`
 
-**Discovery Service (Port 8090)**
+**Discovery Service (Port 8092)**
 - Public search and browse APIs
 - Database: `discovery_db`
 

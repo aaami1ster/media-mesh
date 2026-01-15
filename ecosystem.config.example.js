@@ -157,11 +157,11 @@ module.exports = {
       exec_mode: "cluster",
       env: {
         NODE_ENV: "development",
-        PORT: 8090,
+        PORT: 8092,
       },
       env_production: {
         NODE_ENV: "production",
-        PORT: 8090,
+        PORT: 8092,
       },
       error_file: "./logs/discovery-service-error.log",
       out_file: "./logs/discovery-service-out.log",

@@ -23,7 +23,7 @@ media-mesh/
 │   ├── metadata-service/        # Metadata Service (Port 8083)
 │   ├── media-service/           # Media Service (Port 8084)
 │   ├── ingest-service/          # Ingest Service (Port 8085)
-│   ├── discovery-service/       # Discovery Service (Port 8090)
+│   ├── discovery-service/       # Discovery Service (Port 8092)
 │   └── search-service/          # Search Service (Port 8091)
 ├── shared/                      # Shared modules
 │   ├── dto/                     # Shared DTOs

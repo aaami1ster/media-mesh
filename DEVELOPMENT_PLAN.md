@@ -81,7 +81,7 @@ Create a NestJS monorepo structure for MediaMesh with the following structure:
 - Root package.json with workspace configuration
 - services/ directory for all microservices
 - shared/ directory for shared modules
-- docker-compose.yml for infrastructure (PostgreSQL, Redis, Kafka, Zookeeper)
+- compose.yml for infrastructure (PostgreSQL, Redis, Kafka)
 - tsconfig.json and tsconfig.base.json for TypeScript configuration
 - .gitignore, .eslintrc, .prettierrc
 - README.md (already exists, keep it)
@@ -94,11 +94,11 @@ Set up proper TypeScript path aliases for shared module imports.
 
 **Cursor Prompt**:
 ```
-Create a docker-compose.yml file that sets up:
+Create a compose.yml file that sets up:
 1. PostgreSQL 16 (multiple instances: auth_db, cms_db, metadata_db, media_db, discovery_db, ingest_db, search_db)
 2. Redis 7 for caching and rate limiting
 3. Kafka for event streaming
-4. Optional: Kafka UI for monitoring (port 8090)
+4. Kafka UI for monitoring (port 8092)
 
 Each database should have:
 - Unique name and port
@@ -127,7 +127,7 @@ Services to include:
 - metadata-service (port 8083)
 - media-service (port 8084)
 - ingest-service (port 8085)
-- discovery-service (port 8090)
+- discovery-service (port 8092)
 - search-service (port 8091)
 ```
 
@@ -1129,7 +1129,7 @@ Create Dockerfile for each service:
 
 **Cursor Prompt**:
 ```
-Update docker-compose.yml to include all services:
+Update compose.yml to include all services:
 - All microservices (gateways and services)
 - Database services (already configured)
 - Redis (already configured)
