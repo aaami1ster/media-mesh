@@ -13,6 +13,7 @@ import { REDIS_CONFIG, RATE_LIMIT_CONFIG } from './config/env.constants';
   imports: [
     // Redis client for throttler storage
     RedisModule.forRoot({
+      isGlobal: true,
       options: {
         url: REDIS_CONFIG.PASSWORD
           ? `redis://:${REDIS_CONFIG.PASSWORD}@${REDIS_CONFIG.HOST}:${REDIS_CONFIG.PORT}/${REDIS_CONFIG.DB}`
