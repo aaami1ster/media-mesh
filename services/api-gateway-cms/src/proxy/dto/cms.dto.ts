@@ -273,28 +273,68 @@ export class PaginationQueryDto {
  * Program Response DTO
  */
 export class ProgramResponseDto {
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
+  @ApiProperty({
+    name: 'id',
+    description: 'Unique program identifier (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+    type: String,
+  })
   id: string;
 
-  @ApiProperty({ example: 'The Great Adventure' })
+  @ApiProperty({
+    name: 'title',
+    description: 'Program title',
+    example: 'The Great Adventure',
+    type: String,
+  })
   title: string;
 
-  @ApiPropertyOptional({ example: 'An epic adventure story' })
+  @ApiPropertyOptional({
+    name: 'description',
+    description: 'Program description',
+    example: 'An epic adventure story about heroes and villains fighting for control of the kingdom',
+    type: String,
+  })
   description?: string;
 
-  @ApiProperty({ enum: ContentStatus, example: ContentStatus.PUBLISHED })
+  @ApiProperty({
+    name: 'status',
+    description: 'Program publication status',
+    enum: ContentStatus,
+    example: ContentStatus.PUBLISHED,
+  })
   status: ContentStatus;
 
-  @ApiPropertyOptional({ example: '550e8400-e29b-41d4-a716-446655440002' })
+  @ApiPropertyOptional({
+    name: 'metadataId',
+    description: 'Associated metadata identifier',
+    example: '550e8400-e29b-41d4-a716-446655440002',
+    type: String,
+  })
   metadataId?: string;
 
-  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  @ApiProperty({
+    name: 'createdAt',
+    description: 'Program creation timestamp (ISO 8601)',
+    example: '2024-01-15T10:30:00.000Z',
+    type: String,
+  })
   createdAt: string;
 
-  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  @ApiProperty({
+    name: 'updatedAt',
+    description: 'Program last update timestamp (ISO 8601)',
+    example: '2024-01-16T14:20:00.000Z',
+    type: String,
+  })
   updatedAt: string;
 
-  @ApiPropertyOptional({ example: '2024-01-01T00:00:00.000Z' })
+  @ApiPropertyOptional({
+    name: 'publishedAt',
+    description: 'Program publication timestamp (ISO 8601)',
+    example: '2024-01-16T14:20:00.000Z',
+    type: String,
+  })
   publishedAt?: string;
 }
 
@@ -302,33 +342,85 @@ export class ProgramResponseDto {
  * Episode Response DTO
  */
 export class EpisodeResponseDto {
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440003' })
+  @ApiProperty({
+    name: 'id',
+    description: 'Unique episode identifier (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440003',
+    type: String,
+  })
   id: string;
 
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
+  @ApiProperty({
+    name: 'programId',
+    description: 'Parent program identifier (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+    type: String,
+  })
   programId: string;
 
-  @ApiProperty({ example: 'Episode 1: The Beginning' })
+  @ApiProperty({
+    name: 'title',
+    description: 'Episode title',
+    example: 'Episode 1: The Beginning',
+    type: String,
+  })
   title: string;
 
-  @ApiPropertyOptional({ example: 'The first episode' })
+  @ApiPropertyOptional({
+    name: 'description',
+    description: 'Episode description',
+    example: 'The first episode introduces the main characters and sets up the story',
+    type: String,
+  })
   description?: string;
 
-  @ApiProperty({ example: 1 })
+  @ApiProperty({
+    name: 'episodeNumber',
+    description: 'Episode number in the series',
+    example: 1,
+    type: Number,
+    minimum: 1,
+  })
   episodeNumber: number;
 
-  @ApiPropertyOptional({ example: 3600 })
+  @ApiPropertyOptional({
+    name: 'duration',
+    description: 'Episode duration in seconds',
+    example: 3600,
+    type: Number,
+    minimum: 0,
+  })
   duration?: number;
 
-  @ApiProperty({ enum: ContentStatus, example: ContentStatus.PUBLISHED })
+  @ApiProperty({
+    name: 'status',
+    description: 'Episode publication status',
+    enum: ContentStatus,
+    example: ContentStatus.PUBLISHED,
+  })
   status: ContentStatus;
 
-  @ApiPropertyOptional({ example: '550e8400-e29b-41d4-a716-446655440002' })
+  @ApiPropertyOptional({
+    name: 'metadataId',
+    description: 'Associated metadata identifier',
+    example: '550e8400-e29b-41d4-a716-446655440002',
+    type: String,
+  })
   metadataId?: string;
 
-  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  @ApiProperty({
+    name: 'createdAt',
+    description: 'Episode creation timestamp (ISO 8601)',
+    example: '2024-01-15T10:30:00.000Z',
+    type: String,
+  })
   createdAt: string;
 
-  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  @ApiProperty({
+    name: 'updatedAt',
+    description: 'Episode last update timestamp (ISO 8601)',
+    example: '2024-01-16T14:20:00.000Z',
+    type: String,
+  })
   updatedAt: string;
 }

@@ -23,16 +23,21 @@ import { REDIS_CONFIG, RATE_LIMIT_CONFIG } from './config/env.constants';
     // Rate limiting with Redis storage
     ThrottlerModule.forRootAsync({
       inject: [RedisToken()],
-      useFactory: (redisClient) => ({
-        throttlers: [
-          {
-            name: 'default',
-            ttl: seconds(RATE_LIMIT_CONFIG.DEFAULT_TTL), // using seconds helper
-            limit: RATE_LIMIT_CONFIG.DEFAULT_LIMIT,
-          },
-        ],
-        storage: new RedisThrottlerStorage(redisClient) as any, // Type assertion for compatibility
-      }),
+      useFactory: (redisClient) => {
+        if (!redisClient) {
+          throw new Error('Redis client is not available. Please ensure Redis is running and configured.');
+        }
+        return {
+          throttlers: [
+            {
+              name: 'default',
+              ttl: RATE_LIMIT_CONFIG.DEFAULT_TTL * 1000, // milliseconds (matching discovery gateway)
+              limit: RATE_LIMIT_CONFIG.DEFAULT_LIMIT,
+            },
+          ],
+          storage: new RedisThrottlerStorage(redisClient) as any, // Type assertion for compatibility
+        };
+      },
     }),
     AuthModule,
     ProxyModule,

@@ -21,8 +21,11 @@ export class ThrottlerRoleGuard extends ThrottlerGuard {
 
   protected async getTracker(req: Record<string, any>): Promise<string> {
     // Use user ID for rate limiting if available
-    const userId = req.user?.id || req.ip;
-    return userId;
+    const userId = req.user?.id;
+    const ip = req.ip || req.connection?.remoteAddress || req.headers?.['x-forwarded-for'] || 'unknown';
+    
+    // Always return a string - prefix with user: or ip: for clarity
+    return userId ? `user:${userId}` : `ip:${ip}`;
   }
 
   protected async getLimit(context: ExecutionContext): Promise<number> {

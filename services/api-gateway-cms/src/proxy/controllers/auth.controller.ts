@@ -20,11 +20,13 @@ import {
   JwtAuthGuard,
   Public,
   TimeoutInterceptor,
+} from '@mediamesh/shared';
+import {
   LoginDto,
   RegisterDto,
   TokenResponseDto,
   UserDto,
-} from '@mediamesh/shared';
+} from '../dto/auth.dto';
 import { ProxyService } from '../proxy.service';
 import { Request } from 'express';
 import { RESILIENCE_CONFIG } from '../../config/env.constants';
@@ -128,9 +130,13 @@ export class AuthController {
         token: {
           type: 'string',
           description: 'JWT access token to refresh',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
         },
       },
       required: ['token'],
+      example: {
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      },
     },
   })
   @ApiResponse({
