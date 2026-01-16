@@ -114,6 +114,25 @@ export class ProxyService {
   }
 
   /**
+   * Proxy request to Auth service
+   */
+  async proxyToAuth(
+    method: string,
+    path: string,
+    data?: any,
+    headers?: Record<string, string>,
+  ): Promise<any> {
+    return this.proxyRequest(
+      SERVICE_CONFIG.AUTH_SERVICE,
+      'auth-service',
+      method,
+      path,
+      data,
+      headers,
+    );
+  }
+
+  /**
    * Generic proxy request method with resilience patterns
    */
   private async proxyRequest(

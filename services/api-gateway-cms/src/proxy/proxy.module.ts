@@ -5,6 +5,7 @@ import { CmsController } from './controllers/cms.controller';
 import { MetadataController } from './controllers/metadata.controller';
 import { MediaController } from './controllers/media.controller';
 import { IngestController } from './controllers/ingest.controller';
+import { AuthController } from './controllers/auth.controller';
 import {
   CircuitBreakerService,
   HttpRetryService,
@@ -27,6 +28,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule, // Import AuthModule to access JwtService for JwtAuthGuard
   ],
   controllers: [
+    AuthController,
     CmsController,
     MetadataController,
     MediaController,

@@ -12,6 +12,7 @@ export const SERVER_CONFIG = {
 
 // Service URLs
 export const SERVICE_CONFIG = {
+  AUTH_SERVICE: process.env.AUTH_SERVICE_URL || 'http://localhost:8001',
   CMS_SERVICE: process.env.CMS_SERVICE_URL || 'http://localhost:8002',
   METADATA_SERVICE: process.env.METADATA_SERVICE_URL || 'http://localhost:8003',
   MEDIA_SERVICE: process.env.MEDIA_SERVICE_URL || 'http://localhost:8004',
