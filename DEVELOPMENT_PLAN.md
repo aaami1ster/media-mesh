@@ -367,7 +367,7 @@ Write tests for auth-service:
 ```
 
 **Validation**:
-- [ ] Auth service starts and connects to database
+- [x] Auth service starts and connects to database
 - [ ] Can register new users
 - [ ] Can login and receive JWT token
 - [ ] JWT token validates correctly

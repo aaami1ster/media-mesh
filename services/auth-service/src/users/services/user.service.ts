@@ -4,6 +4,7 @@ import { UserRepository } from '../repositories/user.repository';
 import { User } from '../entities/user.entity';
 import { UserRoles } from '@mediamesh/shared';
 import { throwIfNotFound } from '@mediamesh/shared';
+import { KafkaService } from '../../kafka/kafka.service';
 
 /**
  * User Service
@@ -16,7 +17,10 @@ export class UserService {
   private readonly logger = new Logger(UserService.name);
   private readonly saltRounds = 10;
 
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly kafkaService: KafkaService,
+  ) {}
 
   /**
    * Create a new user
@@ -90,7 +94,38 @@ export class UserService {
       updateData.password = await this.hashPassword(data.password);
     }
 
+    const oldUser = await this.userRepository.findById(id);
     const user = await this.userRepository.update(id, updateData);
+
+    // Emit user updated event
+    const changes: Record<string, { old: any; new: any }> = {};
+    if (data.email && oldUser && oldUser.email !== user.email) {
+      changes.email = { old: oldUser.email, new: user.email };
+    }
+    if (data.role && oldUser && oldUser.role !== user.role) {
+      changes.role = { old: oldUser.role, new: user.role };
+    }
+
+    if (Object.keys(changes).length > 0) {
+      await this.kafkaService.emitUserUpdated({
+        payload: {
+          userId: user.id,
+          email: user.email,
+          changes,
+          updatedBy: id, // TODO: Get actual updater ID from context
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: '', // TODO: Add firstName to User model
+            lastName: '', // TODO: Add lastName to User model
+            role: user.role as any,
+            createdAt: user.createdAt.toISOString(),
+            updatedAt: user.updatedAt.toISOString(),
+          },
+        },
+      });
+    }
+
     this.logger.log(`User updated: ${id}`);
     return user;
   }

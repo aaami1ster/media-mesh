@@ -6,6 +6,7 @@ import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { KafkaModule } from '../kafka/kafka.module';
 import { JWT_CONFIG } from '../config/env.constants';
 import { JwtAuthGuard } from '@mediamesh/shared';
 
@@ -17,6 +18,7 @@ import { JwtAuthGuard } from '@mediamesh/shared';
 @Module({
   imports: [
     UsersModule,
+    KafkaModule,
     PassportModule,
     JwtModule.register({
       secret: JWT_CONFIG.SECRET,

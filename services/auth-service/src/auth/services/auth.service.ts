@@ -7,8 +7,15 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../../users/services/user.service';
-import { UserRoles, UserDto } from '@mediamesh/shared';
-import { LoginDto, RegisterDto, TokenResponseDto } from '@mediamesh/shared';
+import { KafkaService } from '../../kafka/kafka.service';
+import {
+  UserRoles,
+  UserDto,
+  LoginDto,
+  RegisterDto,
+  TokenResponseDto,
+  AuthEventType,
+} from '@mediamesh/shared';
 import { JWT_CONFIG } from '../../config/env.constants';
 
 /**
@@ -26,6 +33,7 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly kafkaService: KafkaService,
   ) {}
 
   /**
@@ -51,6 +59,26 @@ export class AuthService {
 
     // Generate tokens
     const tokens = await this.generateToken(user.id, user.email, user.role);
+
+    // Emit user created event
+    await this.kafkaService.emitUserCreated({
+      payload: {
+        userId: user.id,
+        email: user.email,
+        firstName: registerDto.firstName || '',
+        lastName: registerDto.lastName || '',
+        role: user.role,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: registerDto.firstName || '',
+          lastName: registerDto.lastName || '',
+          role: user.role as any,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        },
+      },
+    });
 
     this.logger.log(`User registered successfully: ${user.id}`);
     return tokens;

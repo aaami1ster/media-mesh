@@ -35,3 +35,10 @@ export const SERVER_CONFIG = {
 export const BCRYPT_CONFIG = {
   SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
 };
+
+// Kafka configuration
+export const KAFKA_CONFIG = {
+  BROKER: process.env.KAFKA_BROKER || 'localhost:9092',
+  CLIENT_ID: process.env.KAFKA_CLIENT_ID || 'auth-service',
+  GROUP_ID: process.env.KAFKA_GROUP_ID || 'auth-service-group',
+};
