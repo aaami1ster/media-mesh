@@ -3,6 +3,14 @@
 # Service selected via command in each service definition
 #
 # Usage: docker compose -f compose.dev.yml up
+#
+# Note: The root Dockerfile builds all services. We build it once and reuse
+# the same image for all services, selecting which service to run via command.
+
+x-mediamesh-build: &mediamesh-build
+  build:
+    context: .
+    dockerfile: Dockerfile
 
 services:
   # PostgreSQL 16 Database Server
@@ -113,7 +121,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     restart: unless-stopped
     ports:
-      - "8090:8080"  # Host port 8090 maps to container port 8080
+      - "8090:8080" # Host port 8090 maps to container port 8080
     depends_on:
       broker:
         condition: service_healthy
@@ -139,10 +147,7 @@ services:
 
   # Auth Service
   auth-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/auth-service/dist/main.js
     container_name: mediamesh-auth-service
     environment:
@@ -200,10 +205,7 @@ services:
 
   # CMS Service
   cms-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/cms-service/dist/main.js
     container_name: mediamesh-cms-service
     environment:
@@ -260,10 +262,7 @@ services:
 
   # Metadata Service
   metadata-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/metadata-service/dist/main.js
     container_name: mediamesh-metadata-service
     environment:
@@ -311,10 +310,7 @@ services:
 
   # Media Service
   media-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/media-service/dist/main.js
     container_name: mediamesh-media-service
     environment:
@@ -369,10 +365,7 @@ services:
 
   # Ingest Service
   ingest-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/ingest-service/dist/main.js
     container_name: mediamesh-ingest-service
     environment:
@@ -428,10 +421,7 @@ services:
 
   # Discovery Service
   discovery-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/discovery-service/dist/main.js
     container_name: mediamesh-discovery-service
     environment:
@@ -496,10 +486,7 @@ services:
 
   # Search Service
   search-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/search-service/dist/main.js
     container_name: mediamesh-search-service
     environment:
@@ -561,10 +548,7 @@ services:
 
   # Discovery Gateway
   discovery-gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/api-gateway-discovery/dist/main.js
     container_name: mediamesh-discovery-gateway
     environment:
@@ -628,10 +612,7 @@ services:
 
   # CMS Gateway
   cms-gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
+    <<: *mediamesh-build
     command: node services/api-gateway-cms/dist/main.js
     container_name: mediamesh-cms-gateway
     environment:
