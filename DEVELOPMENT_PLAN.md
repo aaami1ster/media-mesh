@@ -373,7 +373,7 @@ Write tests for auth-service:
 - [ ] JWT token validates correctly
 - [ ] Roles are assigned correctly
 - [ ] Kafka events are emitted
-- [ ] Tests pass
+- [x] Tests pass
 
 ---
 
