@@ -1,13 +1,9 @@
-# Docker Compose - Development Configuration
-# This file uses the root Dockerfile approach for faster local development
-# For production, use compose.prod.yml with individual Dockerfiles
+# Docker Compose for Production
+# Uses individual Dockerfiles - each service has its own optimized image
+# Better for microservices architecture, independent scaling, and production deployments
 #
-# Usage:
-#   Development: docker compose up (or docker compose -f compose.dev.yml up)
-#   Production:  docker compose -f compose.prod.yml up
-#
-# Note: This file is kept for backward compatibility
-# Consider using compose.dev.yml explicitly for development
+# Usage: docker compose -f compose.prod.yml up
+# Build: docker compose -f compose.prod.yml build
 
 services:
   # PostgreSQL 16 Database Server
@@ -19,7 +15,7 @@ services:
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       # Database names (created via init script)
       POSTGRES_MULTIPLE_DATABASES: auth_db,cms_db,metadata_db,media_db,discovery_db,ingest_db,search_db
     ports:
@@ -129,38 +125,37 @@ services:
   auth-service:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/auth-service/dist/main.js
+      dockerfile: services/auth-service/Dockerfile
+    image: mediamesh/auth-service:${VERSION:-latest}
     container_name: mediamesh-auth-service
     environment:
       # Server Configuration
       NODE_ENV: production
-      PORT: 8086
+      PORT: 8001
 
       # Database Configuration
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/auth_db
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: auth_db
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
 
       # Kafka Configuration
       KAFKA_BROKER: broker:29092
       KAFKA_CLIENT_ID: auth-service
 
       # JWT Configuration
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
 
     ports:
-      - "8086:8086"
+      - "8001:8001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -172,11 +167,9 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8086/health",
+          "curl",
+          "-f",
+          "http://localhost:8001/health",
         ]
       interval: 30s
       timeout: 10s
@@ -190,27 +183,26 @@ services:
   cms-service:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/cms-service/dist/main.js
+      dockerfile: services/cms-service/Dockerfile
+    image: mediamesh/cms-service:${VERSION:-latest}
     container_name: mediamesh-cms-service
     environment:
       # Server Configuration
       NODE_ENV: production
-      PORT: 8082
+      PORT: 8002
 
       # Database Configuration
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cms_db
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/cms_db
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: cms_db
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
 
       # Kafka Configuration
       KAFKA_BROKER: broker:29092
@@ -220,7 +212,7 @@ services:
       KAFKA_TOPIC_CONTENT_PUBLISHED: content.published
 
     ports:
-      - "8082:8082"
+      - "8002:8002"
     depends_on:
       postgres:
         condition: service_healthy
@@ -232,11 +224,9 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8082/health",
+          "curl",
+          "-f",
+          "http://localhost:8002/health",
         ]
       interval: 30s
       timeout: 10s
@@ -250,30 +240,29 @@ services:
   metadata-service:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/metadata-service/dist/main.js
+      dockerfile: services/metadata-service/Dockerfile
+    image: mediamesh/metadata-service:${VERSION:-latest}
     container_name: mediamesh-metadata-service
     environment:
       # Server Configuration
       NODE_ENV: production
-      PORT: 8083
+      PORT: 8003
 
       # Database Configuration
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/metadata_db
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/metadata_db
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: metadata_db
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
 
     ports:
-      - "8083:8083"
+      - "8003:8003"
     depends_on:
       postgres:
         condition: service_healthy
@@ -283,11 +272,9 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8083/health",
+          "curl",
+          "-f",
+          "http://localhost:8003/health",
         ]
       interval: 30s
       timeout: 10s
@@ -301,37 +288,36 @@ services:
   media-service:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/media-service/dist/main.js
+      dockerfile: services/media-service/Dockerfile
+    image: mediamesh/media-service:${VERSION:-latest}
     container_name: mediamesh-media-service
     environment:
       # Server Configuration
       NODE_ENV: production
-      PORT: 8084
+      PORT: 8004
 
       # Database Configuration
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/media_db
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/media_db
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: media_db
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
 
-      # Object Storage Configuration (MinIO for local dev)
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
-      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
-      S3_BUCKET: ${S3_BUCKET:-mediamesh-media}
+      # Object Storage Configuration
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET}
       S3_REGION: ${S3_REGION:-us-east-1}
 
     ports:
-      - "8084:8084"
+      - "8004:8004"
     depends_on:
       postgres:
         condition: service_healthy
@@ -341,11 +327,9 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8084/health",
+          "curl",
+          "-f",
+          "http://localhost:8004/health",
         ]
       interval: 30s
       timeout: 10s
@@ -359,27 +343,26 @@ services:
   ingest-service:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/ingest-service/dist/main.js
+      dockerfile: services/ingest-service/Dockerfile
+    image: mediamesh/ingest-service:${VERSION:-latest}
     container_name: mediamesh-ingest-service
     environment:
       # Server Configuration
       NODE_ENV: production
-      PORT: 8085
+      PORT: 8005
 
       # Database Configuration
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ingest_db
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/ingest_db
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ingest_db
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
 
       # Kafka Configuration
       KAFKA_BROKER: broker:29092
@@ -388,7 +371,7 @@ services:
       KAFKA_TOPIC_INGEST_FAILED: ingest.failed
 
     ports:
-      - "8085:8085"
+      - "8005:8005"
     depends_on:
       postgres:
         condition: service_healthy
@@ -400,11 +383,9 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8085/health",
+          "curl",
+          "-f",
+          "http://localhost:8005/health",
         ]
       interval: 30s
       timeout: 10s
@@ -418,9 +399,8 @@ services:
   discovery-service:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/discovery-service/dist/main.js
+      dockerfile: services/discovery-service/Dockerfile
+    image: mediamesh/discovery-service:${VERSION:-latest}
     container_name: mediamesh-discovery-service
     environment:
       # Server Configuration
@@ -428,17 +408,17 @@ services:
       PORT: 8092
 
       # Database Configuration
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/discovery_db
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/discovery_db
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: discovery_db
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_TTL_PROGRAMS: 1800 # 30 minutes
       REDIS_TTL_SEARCH: 300 # 5 minutes
       REDIS_TTL_TRENDING: 600 # 10 minutes
@@ -454,10 +434,8 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
+          "curl",
+          "-f",
           "http://localhost:8092/health",
         ]
       interval: 30s
@@ -472,9 +450,8 @@ services:
   search-service:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/search-service/dist/main.js
+      dockerfile: services/search-service/Dockerfile
+    image: mediamesh/search-service:${VERSION:-latest}
     container_name: mediamesh-search-service
     environment:
       # Server Configuration
@@ -482,12 +459,12 @@ services:
       PORT: 8091
 
       # Database Configuration
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/search_db
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/search_db
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: search_db
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
       # Kafka Configuration
       KAFKA_BROKER: broker:29092
@@ -507,10 +484,8 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
+          "curl",
+          "-f",
           "http://localhost:8091/health",
         ]
       interval: 30s
@@ -525,9 +500,8 @@ services:
   discovery-gateway:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/api-gateway-discovery/dist/main.js
+      dockerfile: services/api-gateway-discovery/Dockerfile
+    image: mediamesh/api-gateway-discovery:${VERSION:-latest}
     container_name: mediamesh-discovery-gateway
     environment:
       # Server Configuration
@@ -535,22 +509,24 @@ services:
       PORT: 8080
 
       # Service URLs
-      SERVICES_DISCOVERY_URL: http://discovery-service:8092
-      SERVICES_SEARCH_URL: http://search-service:8091
+      DISCOVERY_SERVICE_URL: http://discovery-service:8092
+      SEARCH_SERVICE_URL: http://search-service:8091
 
       # JWT Configuration
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
 
       # Rate Limiting Configuration
-      RATE_LIMIT_TTL: 60 # seconds
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100} # requests per window
-      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60} # seconds
+      RATE_LIMIT_DEFAULT_TTL: 60 # seconds
+      RATE_LIMIT_DEFAULT_LIMIT: ${RATE_LIMIT_DEFAULT_LIMIT:-100} # requests per window
+      RATE_LIMIT_SEARCH_TTL: 60
+      RATE_LIMIT_SEARCH_LIMIT: ${RATE_LIMIT_SEARCH_LIMIT:-60}
+      RATE_LIMIT_AUTHENTICATED_LIMIT: ${RATE_LIMIT_AUTHENTICATED_LIMIT:-200}
 
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
 
       # Kafka Configuration (for events)
       KAFKA_BROKER: broker:29092
@@ -571,10 +547,8 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
+          "curl",
+          "-f",
           "http://localhost:8080/health",
         ]
       interval: 30s
@@ -589,9 +563,8 @@ services:
   cms-gateway:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: mediamesh:latest
-    command: node services/api-gateway-cms/dist/main.js
+      dockerfile: services/api-gateway-cms/Dockerfile
+    image: mediamesh/api-gateway-cms:${VERSION:-latest}
     container_name: mediamesh-cms-gateway
     environment:
       # Server Configuration
@@ -599,25 +572,26 @@ services:
       PORT: 8081
 
       # Service URLs
-      SERVICES_AUTH_URL: http://auth-service:8086
-      SERVICES_CMS_URL: http://cms-service:8082
-      SERVICES_METADATA_URL: http://metadata-service:8083
-      SERVICES_MEDIA_URL: http://media-service:8084
-      SERVICES_INGEST_URL: http://ingest-service:8085
+      CMS_SERVICE_URL: http://cms-service:8002
+      METADATA_SERVICE_URL: http://metadata-service:8003
+      MEDIA_SERVICE_URL: http://media-service:8004
+      INGEST_SERVICE_URL: http://ingest-service:8005
+      AUTH_SERVICE_URL: http://auth-service:8001
 
       # JWT Configuration
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
 
       # Rate Limiting Configuration
-      RATE_LIMIT_TTL: 60 # seconds
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-50} # requests per window (lower for write operations)
-      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60} # seconds
+      RATE_LIMIT_DEFAULT_TTL: 60 # seconds
+      RATE_LIMIT_DEFAULT_LIMIT: ${RATE_LIMIT_DEFAULT_LIMIT:-100} # requests per window
+      RATE_LIMIT_ADMIN_LIMIT: ${RATE_LIMIT_ADMIN_LIMIT:-100}
+      RATE_LIMIT_EDITOR_LIMIT: ${RATE_LIMIT_EDITOR_LIMIT:-50}
 
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
 
       # Kafka Configuration
       KAFKA_BROKER: broker:29092
@@ -644,10 +618,8 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
+          "curl",
+          "-f",
           "http://localhost:8081/health",
         ]
       interval: 30s
@@ -657,12 +629,6 @@ services:
     networks:
       - mediamesh-network
     restart: unless-stopped
-
-# Build the image first: docker build -t mediamesh:latest .
-# Or use: docker compose build
-#
-# For development: docker compose up (uses root Dockerfile)
-# For production: docker compose -f compose.prod.yml up (uses individual Dockerfiles)
 
 volumes:
   # PostgreSQL data persistence

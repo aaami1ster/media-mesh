@@ -1,13 +1,8 @@
-# Docker Compose - Development Configuration
-# This file uses the root Dockerfile approach for faster local development
-# For production, use compose.prod.yml with individual Dockerfiles
+# Docker Compose for Development
+# Uses root Dockerfile - builds all services into one image
+# Service selected via command in each service definition
 #
-# Usage:
-#   Development: docker compose up (or docker compose -f compose.dev.yml up)
-#   Production:  docker compose -f compose.prod.yml up
-#
-# Note: This file is kept for backward compatibility
-# Consider using compose.dev.yml explicitly for development
+# Usage: docker compose -f compose.dev.yml up
 
 services:
   # PostgreSQL 16 Database Server
@@ -135,8 +130,8 @@ services:
     container_name: mediamesh-auth-service
     environment:
       # Server Configuration
-      NODE_ENV: production
-      PORT: 8086
+      NODE_ENV: development
+      PORT: 8001
 
       # Database Configuration
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db
@@ -156,11 +151,11 @@ services:
       KAFKA_CLIENT_ID: auth-service
 
       # JWT Configuration
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
 
     ports:
-      - "8086:8086"
+      - "8001:8001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -176,7 +171,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:8086/health",
+          "http://localhost:8001/health",
         ]
       interval: 30s
       timeout: 10s
@@ -196,8 +191,8 @@ services:
     container_name: mediamesh-cms-service
     environment:
       # Server Configuration
-      NODE_ENV: production
-      PORT: 8082
+      NODE_ENV: development
+      PORT: 8002
 
       # Database Configuration
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cms_db
@@ -220,7 +215,7 @@ services:
       KAFKA_TOPIC_CONTENT_PUBLISHED: content.published
 
     ports:
-      - "8082:8082"
+      - "8002:8002"
     depends_on:
       postgres:
         condition: service_healthy
@@ -236,7 +231,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:8082/health",
+          "http://localhost:8002/health",
         ]
       interval: 30s
       timeout: 10s
@@ -256,8 +251,8 @@ services:
     container_name: mediamesh-metadata-service
     environment:
       # Server Configuration
-      NODE_ENV: production
-      PORT: 8083
+      NODE_ENV: development
+      PORT: 8003
 
       # Database Configuration
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/metadata_db
@@ -273,7 +268,7 @@ services:
       REDIS_PASSWORD: ""
 
     ports:
-      - "8083:8083"
+      - "8003:8003"
     depends_on:
       postgres:
         condition: service_healthy
@@ -287,7 +282,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:8083/health",
+          "http://localhost:8003/health",
         ]
       interval: 30s
       timeout: 10s
@@ -307,8 +302,8 @@ services:
     container_name: mediamesh-media-service
     environment:
       # Server Configuration
-      NODE_ENV: production
-      PORT: 8084
+      NODE_ENV: development
+      PORT: 8004
 
       # Database Configuration
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/media_db
@@ -331,7 +326,7 @@ services:
       S3_REGION: ${S3_REGION:-us-east-1}
 
     ports:
-      - "8084:8084"
+      - "8004:8004"
     depends_on:
       postgres:
         condition: service_healthy
@@ -345,7 +340,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:8084/health",
+          "http://localhost:8004/health",
         ]
       interval: 30s
       timeout: 10s
@@ -365,8 +360,8 @@ services:
     container_name: mediamesh-ingest-service
     environment:
       # Server Configuration
-      NODE_ENV: production
-      PORT: 8085
+      NODE_ENV: development
+      PORT: 8005
 
       # Database Configuration
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ingest_db
@@ -388,7 +383,7 @@ services:
       KAFKA_TOPIC_INGEST_FAILED: ingest.failed
 
     ports:
-      - "8085:8085"
+      - "8005:8005"
     depends_on:
       postgres:
         condition: service_healthy
@@ -404,7 +399,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:8085/health",
+          "http://localhost:8005/health",
         ]
       interval: 30s
       timeout: 10s
@@ -424,7 +419,7 @@ services:
     container_name: mediamesh-discovery-service
     environment:
       # Server Configuration
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 8092
 
       # Database Configuration
@@ -478,7 +473,7 @@ services:
     container_name: mediamesh-search-service
     environment:
       # Server Configuration
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 8091
 
       # Database Configuration
@@ -531,21 +526,22 @@ services:
     container_name: mediamesh-discovery-gateway
     environment:
       # Server Configuration
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 8080
 
       # Service URLs
-      SERVICES_DISCOVERY_URL: http://discovery-service:8092
-      SERVICES_SEARCH_URL: http://search-service:8091
+      DISCOVERY_SERVICE_URL: http://discovery-service:8092
+      SEARCH_SERVICE_URL: http://search-service:8091
 
       # JWT Configuration
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
 
       # Rate Limiting Configuration
-      RATE_LIMIT_TTL: 60 # seconds
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100} # requests per window
-      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60} # seconds
+      RATE_LIMIT_DEFAULT_TTL: 60 # seconds
+      RATE_LIMIT_DEFAULT_LIMIT: ${RATE_LIMIT_DEFAULT_LIMIT:-100} # requests per window
+      RATE_LIMIT_SEARCH_TTL: 60
+      RATE_LIMIT_SEARCH_LIMIT: ${RATE_LIMIT_SEARCH_LIMIT:-60}
 
       # Redis Configuration
       REDIS_HOST: redis
@@ -595,24 +591,25 @@ services:
     container_name: mediamesh-cms-gateway
     environment:
       # Server Configuration
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 8081
 
       # Service URLs
-      SERVICES_AUTH_URL: http://auth-service:8086
-      SERVICES_CMS_URL: http://cms-service:8082
-      SERVICES_METADATA_URL: http://metadata-service:8083
-      SERVICES_MEDIA_URL: http://media-service:8084
-      SERVICES_INGEST_URL: http://ingest-service:8085
+      CMS_SERVICE_URL: http://cms-service:8002
+      METADATA_SERVICE_URL: http://metadata-service:8003
+      MEDIA_SERVICE_URL: http://media-service:8004
+      INGEST_SERVICE_URL: http://ingest-service:8005
+      AUTH_SERVICE_URL: http://auth-service:8001
 
       # JWT Configuration
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000} # 24 hours in milliseconds
 
       # Rate Limiting Configuration
-      RATE_LIMIT_TTL: 60 # seconds
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-50} # requests per window (lower for write operations)
-      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60} # seconds
+      RATE_LIMIT_DEFAULT_TTL: 60 # seconds
+      RATE_LIMIT_DEFAULT_LIMIT: ${RATE_LIMIT_DEFAULT_LIMIT:-100} # requests per window
+      RATE_LIMIT_ADMIN_LIMIT: ${RATE_LIMIT_ADMIN_LIMIT:-100}
+      RATE_LIMIT_EDITOR_LIMIT: ${RATE_LIMIT_EDITOR_LIMIT:-50}
 
       # Redis Configuration
       REDIS_HOST: redis
@@ -657,12 +654,6 @@ services:
     networks:
       - mediamesh-network
     restart: unless-stopped
-
-# Build the image first: docker build -t mediamesh:latest .
-# Or use: docker compose build
-#
-# For development: docker compose up (uses root Dockerfile)
-# For production: docker compose -f compose.prod.yml up (uses individual Dockerfiles)
 
 volumes:
   # PostgreSQL data persistence
