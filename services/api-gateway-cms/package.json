@@ -14,7 +14,8 @@
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "postman:generate": "node scripts/generate-postman-collection.js"
   },
   "dependencies": {
     "@mediamesh/shared": "*",

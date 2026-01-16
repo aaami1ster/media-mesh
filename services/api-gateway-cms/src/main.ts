@@ -33,29 +33,65 @@ async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('MediaMesh CMS API Gateway')
-    .setDescription('API Gateway for CMS, Metadata, Media, and Ingest Services')
+    .setDescription(
+      `API Gateway for CMS, Metadata, Media, and Ingest Services.
+      
+## Features
+- **Authentication**: JWT-based authentication with role-based access control (RBAC)
+- **Rate Limiting**: Redis-based rate limiting with different limits for ADMIN and EDITOR roles
+- **Resilience**: Automatic retry with exponential backoff, circuit breaker pattern, and timeout protection
+- **API Versioning**: URL-based versioning (/api/v1/...)
+
+## Authentication
+Most endpoints require JWT authentication. Use the "Authorize" button to set your JWT token.
+
+## Rate Limits
+- **ADMIN**: 100 requests/minute
+- **EDITOR**: 50 requests/minute
+- **Default**: 20 requests/minute
+
+## Service Endpoints
+- **CMS Service**: Programs and Episodes management
+- **Metadata Service**: Content metadata management
+- **Media Service**: Media file upload and management
+- **Ingest Service**: Content ingestion from external sources`,
+    )
     .setVersion('1.0')
-    .addTag('CMS', 'Content Management System endpoints')
-    .addTag('Metadata', 'Metadata management endpoints')
-    .addTag('Media', 'Media upload and management endpoints')
-    .addTag('Ingest', 'Content ingestion endpoints')
+    .setContact('MediaMesh Team', 'https://mediamesh.example.com', 'support@mediamesh.example.com')
+    .setLicense('MIT', 'https://opensource.org/licenses/MIT')
+    .addServer('http://localhost:8081', 'Development server')
+    .addServer('https://api.mediamesh.example.com', 'Production server')
+    .addTag('CMS', 'Content Management System endpoints - Manage programs and episodes')
+    .addTag('Metadata', 'Metadata management endpoints - Manage content metadata')
+    .addTag('Media', 'Media upload and management endpoints - Upload and manage media files')
+    .addTag('Ingest', 'Content ingestion endpoints - Ingest content from external sources')
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'JWT',
-        description: 'Enter JWT token',
+        description: 'Enter JWT token. Get token from /auth/login endpoint.',
         in: 'header',
       },
       'JWT-auth',
     )
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {
+    operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
+  });
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+      docExpansion: 'none',
+      filter: true,
+      showRequestDuration: true,
     },
+    customSiteTitle: 'MediaMesh CMS API Gateway',
+    customfavIcon: '/favicon.ico',
+    customCss: '.swagger-ui .topbar { display: none }',
   });
 
   const port = SERVER_CONFIG.PORT;
