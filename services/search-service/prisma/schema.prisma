@@ -1,0 +1,38 @@
+// Prisma Schema for Search Service
+// Database: search_db
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContentType {
+  PROGRAM
+  EPISODE
+  MOVIE
+  SERIES
+}
+
+model SearchIndex {
+  id          String      @id @default(uuid())
+  contentId   String      @unique
+  contentType ContentType
+  title       String
+  description String?
+  category    String?
+  language    String?
+  tags        String[]    @default([])
+  indexedAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("search_index")
+  @@index([contentId])
+  @@index([contentType])
+  @@index([category])
+  @@index([language])
+  @@index([indexedAt])
+}

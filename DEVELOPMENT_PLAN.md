@@ -877,11 +877,11 @@ Write tests for search-service:
 ```
 
 **Validation**:
-- [ ] Search service starts and connects to Kafka
+- [x] Search service starts and connects to Kafka
 - [ ] Consumes Kafka events correctly
 - [ ] Updates search index on events
 - [ ] Can search indexed content
-- [ ] Tests pass
+- [x] Tests pass
 
 ---
 
