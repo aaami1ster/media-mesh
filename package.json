@@ -10,8 +10,18 @@
     "shared"
   ],
   "scripts": {
-    "build": "nest build",
-    "build:all": "npm run build --workspaces --if-present",
+    "prisma:generate:auth": "npm --workspace @mediamesh/auth-service run prisma:generate",
+    "prisma:generate:cms": "npm --workspace @mediamesh/cms-service run prisma:generate",
+    "prisma:generate:discovery": "npm --workspace @mediamesh/discovery-service run prisma:generate",
+    "prisma:generate:ingest": "npm --workspace @mediamesh/ingest-service run prisma:generate",
+    "prisma:generate:media": "npm --workspace @mediamesh/media-service run prisma:generate",
+    "prisma:generate:metadata": "npm --workspace @mediamesh/metadata-service run prisma:generate",
+    "prisma:generate:search": "npm --workspace @mediamesh/search-service run prisma:generate",
+
+    "prisma:generate:all": "npm run prisma:generate:auth && npm run prisma:generate:cms && npm run prisma:generate:metadata && npm run prisma:generate:discovery && npm run prisma:generate:ingest && npm run prisma:generate:media && npm run prisma:generate:metadata && npm run prisma:generate:search",
+
+    "build:all": "npm run prisma:generate:all && npm run build --workspaces --if-present",
+
     "format": "prettier --write \"services/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{services,shared,test}/**/*.ts\" --fix",
     "lint:all": "npm run lint --workspaces --if-present",
