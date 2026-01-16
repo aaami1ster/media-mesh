@@ -50,3 +50,17 @@ export const KAFKA_CONFIG = {
 export const CMS_SERVICE_CONFIG = {
   BASE_URL: process.env.CMS_SERVICE_URL || 'http://localhost:8002',
 };
+
+// DynamoDB configuration
+export const DYNAMODB_CONFIG = {
+  REGION: process.env.AWS_REGION || 'us-east-1',
+  ENDPOINT: process.env.DYNAMODB_ENDPOINT, // For DynamoDB Local
+  ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+  SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+  TABLES: {
+    TRENDING: process.env.DYNAMODB_TABLE_TRENDING || 'mediamesh-trending',
+    POPULAR: process.env.DYNAMODB_TABLE_POPULAR || 'mediamesh-popular',
+  },
+  TTL_ATTRIBUTE: process.env.DYNAMODB_TTL_ATTRIBUTE || 'ttl',
+  ENABLED: process.env.DYNAMODB_ENABLED !== 'false', // Default to enabled
+};

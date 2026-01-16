@@ -7,4 +7,5 @@ export * from './decorators';
 export * from './utils';
 export * from './resilience';
 export * from './observability';
+export * from './dynamodb';
 export * from './exceptions';

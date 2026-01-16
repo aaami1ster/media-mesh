@@ -20,7 +20,9 @@
     "ajv": "^8.12.0",
     "@nestjs/jwt": "^10.2.0",
     "winston": "^3.11.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

@@ -1,718 +1,365 @@
-# DynamoDB Integration Guide for MediaMesh
+# DynamoDB Integration Guide
 
-This guide explains how to integrate DynamoDB into MediaMesh for high-performance read operations.
-
----
-
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [Use Cases](#use-cases)
-- [Table Design](#table-design)
-- [Integration Steps](#integration-steps)
-- [Code Examples](#code-examples)
-- [Best Practices](#best-practices)
-- [Migration Strategy](#migration-strategy)
-
----
+This guide explains how DynamoDB is integrated into Discovery and Search services for high-performance hot data storage.
 
 ## Overview
 
-DynamoDB is used in MediaMesh for:
-- **Discovery Service**: Hot data caching (popular programs, trending content)
-- **Search Service**: Fast search indexes
-- **Rate Limiting**: Distributed counters with automatic TTL
+DynamoDB is used for:
+- **Discovery Service**: Hot data (trending, popular content) with automatic TTL
+- **Search Service**: Search indexes with automatic expiration
 
-**Benefits**:
-- Single-digit millisecond latency
-- Auto-scaling
-- Automatic TTL for data expiration
-- Cost-effective for high-traffic scenarios
+## Architecture
 
----
+### Cache-Aside Pattern
 
-## Use Cases
+Both services implement a **cache-aside pattern** with fallback:
 
-### 1. Discovery Service - Hot Data
-
-**Use DynamoDB for**:
-- Popular programs (top 1000)
-- Trending content
-- Recently viewed programs
-- Personalized recommendations
-
-**Use PostgreSQL for**:
-- Full program catalog
-- Complex queries with joins
-- Transactions
-
-### 2. Search Service - Search Indexes
-
-**Use DynamoDB for**:
-- Fast content lookups by ID
-- Category-based queries
-- Language-based filtering
-
-**Use PostgreSQL/Elasticsearch for**:
-- Full-text search
-- Complex search queries
-- Search analytics
-
-### 3. Rate Limiting - Distributed Counters
-
-**Use DynamoDB for**:
-- Distributed rate limit counters
-- Automatic expiration (TTL)
-- High-throughput writes
-
-**Use Redis for**:
-- Real-time rate limiting
-- Sliding window calculations
-
----
-
-## Table Design
-
-### 1. Discovery Hot Data Table
-
-```typescript
-{
-  TableName: 'mediamesh-discovery-hot-data',
-  KeySchema: [
-    { AttributeName: 'programId', KeyType: 'HASH' }
-  ],
-  AttributeDefinitions: [
-    { AttributeName: 'programId', AttributeType: 'S' },
-    { AttributeName: 'category', AttributeType: 'S' },
-    { AttributeName: 'popularityScore', AttributeType: 'N' }
-  ],
-  GlobalSecondaryIndexes: [
-    {
-      IndexName: 'CategoryIndex',
-      KeySchema: [
-        { AttributeName: 'category', KeyType: 'HASH' },
-        { AttributeName: 'popularityScore', KeyType: 'RANGE' }
-      ],
-      Projection: { ProjectionType: 'ALL' }
-    }
-  ],
-  TimeToLiveSpecification: {
-    Enabled: true,
-    AttributeName: 'ttl'
-  },
-  BillingMode: 'ON_DEMAND' // or PROVISIONED
-}
+```
+Request → DynamoDB (hot data) → Redis (cache) → PostgreSQL (source of truth)
 ```
 
-**Items Structure**:
+**Flow:**
+1. Check DynamoDB first (fastest, hot data)
+2. If miss, check Redis cache
+3. If miss, query PostgreSQL
+4. Write back to DynamoDB and Redis
+
+### TTL (Time To Live)
+
+DynamoDB items have automatic TTL:
+- **Trending**: 10 minutes (600 seconds)
+- **Popular**: 5 minutes (300 seconds)
+- **Search Index**: 30 days (2,592,000 seconds)
+
+Items are automatically deleted by DynamoDB when TTL expires.
+
+## Configuration
+
+### Environment Variables
+
+**Discovery Service:**
+```env
+DYNAMODB_ENABLED=true
+DYNAMODB_ENDPOINT=http://dynamodb-local:8000  # For local dev
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=local  # For DynamoDB Local
+AWS_SECRET_ACCESS_KEY=local  # For DynamoDB Local
+DYNAMODB_TABLE_TRENDING=mediamesh-trending
+DYNAMODB_TABLE_POPULAR=mediamesh-popular
+DYNAMODB_TTL_ATTRIBUTE=ttl
+```
+
+**Search Service:**
+```env
+DYNAMODB_ENABLED=true
+DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=local
+AWS_SECRET_ACCESS_KEY=local
+DYNAMODB_TABLE_SEARCH_INDEX=mediamesh-search-index
+DYNAMODB_TTL_ATTRIBUTE=ttl
+DYNAMODB_TTL_SECONDS=2592000  # 30 days
+```
+
+### DynamoDB Local (Development)
+
+For local development, use DynamoDB Local:
+
+```bash
+# Start DynamoDB Local
+docker compose -f docker-compose.dynamodb.yml up -d
+
+# Or include in main compose
+docker compose -f compose.dev.yml up -d dynamodb-local
+```
+
+**Endpoint:** `http://localhost:8000`
+
+### AWS DynamoDB (Production)
+
+For production, use AWS DynamoDB:
+
+```env
+DYNAMODB_ENABLED=true
+# Remove DYNAMODB_ENDPOINT (uses AWS)
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=<your-access-key>
+AWS_SECRET_ACCESS_KEY=<your-secret-key>
+```
+
+## Tables
+
+### Discovery Service Tables
+
+#### `mediamesh-trending`
+- **Partition Key**: `contentType` (PROGRAM, EPISODE, all)
+- **Sort Key**: `rank` (1, 2, 3, ...)
+- **TTL**: `ttl` attribute (10 minutes)
+- **GSI**: None
+
+**Item Structure:**
 ```json
 {
-  "programId": "prog-123",
+  "contentType": "PROGRAM",
+  "rank": 1,
+  "programId": "uuid",
   "title": "Program Title",
   "description": "Description",
-  "category": "entertainment",
-  "popularityScore": 9500,
-  "viewCount": 150000,
-  "thumbnailUrl": "https://...",
-  "metadata": { ... },
-  "ttl": 1735689600 // Unix timestamp (30 days)
+  "data": "{...full object...}",
+  "ttl": 1234567890
 }
 ```
 
-### 2. Search Index Table
+#### `mediamesh-popular`
+- **Partition Key**: `contentType`
+- **Sort Key**: `rank`
+- **TTL**: `ttl` attribute (5 minutes)
+- **GSI**: None
 
-```typescript
-{
-  TableName: 'mediamesh-search-index',
-  KeySchema: [
-    { AttributeName: 'contentId', KeyType: 'HASH' }
-  ],
-  AttributeDefinitions: [
-    { AttributeName: 'contentId', AttributeType: 'S' },
-    { AttributeName: 'contentType', AttributeType: 'S' },
-    { AttributeName: 'category', AttributeType: 'S' }
-  ],
-  GlobalSecondaryIndexes: [
-    {
-      IndexName: 'ContentTypeIndex',
-      KeySchema: [
-        { AttributeName: 'contentType', KeyType: 'HASH' }
-      ],
-      Projection: { ProjectionType: 'ALL' }
-    },
-    {
-      IndexName: 'CategoryIndex',
-      KeySchema: [
-        { AttributeName: 'category', KeyType: 'HASH' }
-      ],
-      Projection: { ProjectionType: 'ALL' }
-    }
-  ],
-  BillingMode: 'ON_DEMAND'
-}
-```
+### Search Service Tables
 
-### 3. Rate Limiting Table
+#### `mediamesh-search-index`
+- **Partition Key**: `contentId` (unique)
+- **Sort Key**: None
+- **TTL**: `ttl` attribute (30 days)
+- **GSI**: 
+  - `contentType-index` (partition key: contentType)
+  - `category-index` (partition key: category)
 
-```typescript
-{
-  TableName: 'mediamesh-rate-limits',
-  KeySchema: [
-    { AttributeName: 'key', KeyType: 'HASH' }
-  ],
-  AttributeDefinitions: [
-    { AttributeName: 'key', AttributeType: 'S' }
-  ],
-  TimeToLiveSpecification: {
-    Enabled: true,
-    AttributeName: 'expiresAt'
-  },
-  BillingMode: 'ON_DEMAND'
-}
-```
-
-**Items Structure**:
+**Item Structure:**
 ```json
 {
-  "key": "rate-limit:user:123:endpoint:/api/v1/search",
-  "count": 45,
-  "windowStart": 1735603200,
-  "expiresAt": 1735603800 // TTL (1 hour window)
+  "contentId": "uuid",
+  "contentType": "PROGRAM",
+  "title": "Title",
+  "description": "Description",
+  "category": "category",
+  "language": "en",
+  "tags": ["tag1", "tag2"],
+  "indexedAt": "2024-01-16T12:00:00Z",
+  "updatedAt": "2024-01-16T12:00:00Z",
+  "ttl": 1234567890
 }
 ```
 
----
+## Implementation Details
 
-## Integration Steps
+### Discovery Service
 
-### Step 1: Install AWS SDK
+**Trending/Popular Flow:**
+1. Check DynamoDB for cached results
+2. If found, return immediately
+3. If not found, query PostgreSQL
+4. Store in DynamoDB with TTL
+5. Also store in Redis cache
+
+**Code:**
+```typescript
+// Try DynamoDB first
+const dynamoResult = await this.dynamoDBRepository.getTrending(contentType, limit);
+if (dynamoResult) {
+  return dynamoResult;
+}
+
+// Fallback to PostgreSQL
+const trending = await this.repository.findTrending(contentType, limit);
+
+// Store in DynamoDB
+await this.dynamoDBRepository.storeTrending(contentType, trending, ttl);
+```
+
+### Search Service
+
+**Indexing Flow:**
+1. Write to DynamoDB (primary)
+2. Write to PostgreSQL (fallback)
+3. If DynamoDB fails, PostgreSQL is used
+
+**Search Flow:**
+1. Try DynamoDB for simple queries
+2. Fallback to PostgreSQL for complex full-text search
+3. DynamoDB is limited - use OpenSearch/Elasticsearch for production
+
+**Code:**
+```typescript
+// Try DynamoDB first
+if (DYNAMODB_CONFIG.ENABLED && query.length < 50) {
+  const dynamoResult = await this.dynamoDBRepository.search(...);
+  if (dynamoResult.results.length > 0) {
+    return dynamoResult;
+  }
+}
+
+// Fallback to PostgreSQL
+return await this.repository.search(...);
+```
+
+## IAM Roles (Production)
+
+### Discovery Service IAM Policy
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:DeleteItem",
+        "dynamodb:UpdateItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:ACCOUNT:table/mediamesh-trending",
+        "arn:aws:dynamodb:us-east-1:ACCOUNT:table/mediamesh-trending/index/*",
+        "arn:aws:dynamodb:us-east-1:ACCOUNT:table/mediamesh-popular",
+        "arn:aws:dynamodb:us-east-1:ACCOUNT:table/mediamesh-popular/index/*"
+      ]
+    }
+  ]
+}
+```
+
+### Search Service IAM Policy
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:DeleteItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:BatchWriteItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:ACCOUNT:table/mediamesh-search-index",
+        "arn:aws:dynamodb:us-east-1:ACCOUNT:table/mediamesh-search-index/index/*"
+      ]
+    }
+  ]
+}
+```
+
+## Testing with DynamoDB Local
+
+### Start DynamoDB Local
 
 ```bash
-npm install @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb
-```
+# Using Docker Compose
+docker compose -f docker-compose.dynamodb.yml up -d
 
-### Step 2: Configure DynamoDB Client
-
-```typescript
-// shared/config/dynamodb.config.ts
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-
-const dynamoDBClient = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  // Credentials from IAM role (in production) or environment variables (local)
-  ...(process.env.AWS_ACCESS_KEY_ID && {
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-  }),
-});
-
-export const docClient = DynamoDBDocumentClient.from(dynamoDBClient, {
-  marshallOptions: {
-    removeUndefinedValues: true,
-  },
-});
-```
-
-### Step 3: Create DynamoDB Service
-
-```typescript
-// shared/services/dynamodb.service.ts
-import { Injectable } from '@nestjs/common';
-import { docClient } from '../config/dynamodb.config';
-import {
-  GetCommand,
-  PutCommand,
-  UpdateCommand,
-  DeleteCommand,
-  QueryCommand,
-  ScanCommand,
-} from '@aws-sdk/lib-dynamodb';
-
-@Injectable()
-export class DynamoDBService {
-  async get(tableName: string, key: Record<string, any>) {
-    const result = await docClient.send(
-      new GetCommand({
-        TableName: tableName,
-        Key: key,
-      })
-    );
-    return result.Item;
-  }
-
-  async put(tableName: string, item: Record<string, any>) {
-    await docClient.send(
-      new PutCommand({
-        TableName: tableName,
-        Item: item,
-      })
-    );
-  }
-
-  async update(
-    tableName: string,
-    key: Record<string, any>,
-    updateExpression: string,
-    expressionAttributeValues: Record<string, any>
-  ) {
-    await docClient.send(
-      new UpdateCommand({
-        TableName: tableName,
-        Key: key,
-        UpdateExpression: updateExpression,
-        ExpressionAttributeValues: expressionAttributeValues,
-      })
-    );
-  }
-
-  async query(
-    tableName: string,
-    keyConditionExpression: string,
-    expressionAttributeValues: Record<string, any>,
-    indexName?: string
-  ) {
-    const result = await docClient.send(
-      new QueryCommand({
-        TableName: tableName,
-        IndexName: indexName,
-        KeyConditionExpression: keyConditionExpression,
-        ExpressionAttributeValues: expressionAttributeValues,
-      })
-    );
-    return result.Items || [];
-  }
-
-  async delete(tableName: string, key: Record<string, any>) {
-    await docClient.send(
-      new DeleteCommand({
-        TableName: tableName,
-        Key: key,
-      })
-    );
-  }
-}
-```
-
----
-
-## Code Examples
-
-### Discovery Service - Hot Data Caching
-
-```typescript
-// discovery-service/src/services/discovery.service.ts
-import { Injectable } from '@nestjs/common';
-import { DynamoDBService } from '@shared/services/dynamodb.service';
-import { ProgramRepository } from '../repositories/program.repository';
-
-@Injectable()
-export class DiscoveryService {
-  private readonly HOT_DATA_TABLE = 'mediamesh-discovery-hot-data';
-  private readonly CACHE_TTL = 1800; // 30 minutes
-
-  constructor(
-    private readonly dynamoDB: DynamoDBService,
-    private readonly programRepository: ProgramRepository,
-  ) {}
-
-  async getPopularPrograms(limit: number = 50) {
-    // Try DynamoDB first (hot data)
-    try {
-      const cached = await this.dynamoDB.get(this.HOT_DATA_TABLE, {
-        programId: 'popular',
-      });
-
-      if (cached && cached.expiresAt > Date.now() / 1000) {
-        return cached.programs.slice(0, limit);
-      }
-    } catch (error) {
-      // Fallback to PostgreSQL if DynamoDB fails
-      console.warn('DynamoDB cache miss, falling back to PostgreSQL', error);
-    }
-
-    // Fetch from PostgreSQL
-    const programs = await this.programRepository.findPopular(limit);
-
-    // Cache in DynamoDB (async, don't wait)
-    this.cachePopularPrograms(programs).catch(console.error);
-
-    return programs;
-  }
-
-  private async cachePopularPrograms(programs: any[]) {
-    try {
-      await this.dynamoDB.put(this.HOT_DATA_TABLE, {
-        programId: 'popular',
-        programs: programs,
-        expiresAt: Math.floor(Date.now() / 1000) + this.CACHE_TTL,
-        ttl: Math.floor(Date.now() / 1000) + this.CACHE_TTL,
-      });
-    } catch (error) {
-      console.error('Failed to cache popular programs', error);
-    }
-  }
-
-  async getProgramById(programId: string) {
-    // Check DynamoDB for hot programs
-    const cached = await this.dynamoDB.get(this.HOT_DATA_TABLE, {
-      programId,
-    });
-
-    if (cached && cached.expiresAt > Date.now() / 1000) {
-      return cached;
-    }
-
-    // Fetch from PostgreSQL
-    const program = await this.programRepository.findById(programId);
-
-    // Cache if it's popular (viewCount > threshold)
-    if (program && program.viewCount > 10000) {
-      this.cacheProgram(program).catch(console.error);
-    }
-
-    return program;
-  }
-
-  private async cacheProgram(program: any) {
-    try {
-      await this.dynamoDB.put(this.HOT_DATA_TABLE, {
-        programId: program.id,
-        ...program,
-        expiresAt: Math.floor(Date.now() / 1000) + this.CACHE_TTL,
-        ttl: Math.floor(Date.now() / 1000) + this.CACHE_TTL,
-      });
-    } catch (error) {
-      console.error('Failed to cache program', error);
-    }
-  }
-
-  async getTrendingByCategory(category: string, limit: number = 20) {
-    // Query DynamoDB GSI
-    const items = await this.dynamoDB.query(
-      this.HOT_DATA_TABLE,
-      'category = :category',
-      { ':category': category },
-      'CategoryIndex'
-    );
-
-    if (items.length >= limit) {
-      return items
-        .sort((a, b) => b.popularityScore - a.popularityScore)
-        .slice(0, limit);
-    }
-
-    // Fallback to PostgreSQL
-    return this.programRepository.findTrendingByCategory(category, limit);
-  }
-}
-```
-
-### Search Service - Search Index
-
-```typescript
-// search-service/src/services/search.service.ts
-import { Injectable } from '@nestjs/common';
-import { DynamoDBService } from '@shared/services/dynamodb.service';
-
-@Injectable()
-export class SearchService {
-  private readonly SEARCH_INDEX_TABLE = 'mediamesh-search-index';
-
-  constructor(private readonly dynamoDB: DynamoDBService) {}
-
-  async indexContent(contentId: string, content: any) {
-    await this.dynamoDB.put(this.SEARCH_INDEX_TABLE, {
-      contentId,
-      contentType: content.type,
-      title: content.title,
-      description: content.description,
-      category: content.category,
-      language: content.language,
-      tags: content.tags || [],
-      indexedAt: new Date().toISOString(),
-    });
-  }
-
-  async searchByContentType(contentType: string, query?: string) {
-    const items = await this.dynamoDB.query(
-      this.SEARCH_INDEX_TABLE,
-      'contentType = :type',
-      { ':type': contentType },
-      'ContentTypeIndex'
-    );
-
-    if (query) {
-      // Filter by query (client-side filtering for simple cases)
-      // For complex search, use Elasticsearch
-      return items.filter(
-        (item) =>
-          item.title?.toLowerCase().includes(query.toLowerCase()) ||
-          item.description?.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-
-    return items;
-  }
-
-  async searchByCategory(category: string) {
-    return this.dynamoDB.query(
-      this.SEARCH_INDEX_TABLE,
-      'category = :category',
-      { ':category': category },
-      'CategoryIndex'
-    );
-  }
-
-  async getById(contentId: string) {
-    return this.dynamoDB.get(this.SEARCH_INDEX_TABLE, { contentId });
-  }
-
-  async deleteIndex(contentId: string) {
-    await this.dynamoDB.delete(this.SEARCH_INDEX_TABLE, { contentId });
-  }
-}
-```
-
-### Rate Limiting with DynamoDB
-
-```typescript
-// shared/services/rate-limit.service.ts
-import { Injectable } from '@nestjs/common';
-import { DynamoDBService } from './dynamodb.service';
-
-@Injectable()
-export class RateLimitService {
-  private readonly RATE_LIMIT_TABLE = 'mediamesh-rate-limits';
-  private readonly WINDOW_SIZE = 3600; // 1 hour
-
-  constructor(private readonly dynamoDB: DynamoDBService) {}
-
-  async checkRateLimit(
-    key: string,
-    limit: number,
-    windowSeconds: number = this.WINDOW_SIZE
-  ): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
-    const now = Math.floor(Date.now() / 1000);
-    const windowStart = now - (now % windowSeconds);
-    const rateLimitKey = `${key}:${windowStart}`;
-    const expiresAt = windowStart + windowSeconds;
-
-    try {
-      // Try to get current count
-      const item = await this.dynamoDB.get(this.RATE_LIMIT_TABLE, {
-        key: rateLimitKey,
-      });
-
-      const currentCount = item?.count || 0;
-
-      if (currentCount >= limit) {
-        return {
-          allowed: false,
-          remaining: 0,
-          resetAt: expiresAt,
-        };
-      }
-
-      // Increment counter
-      await this.dynamoDB.update(
-        this.RATE_LIMIT_TABLE,
-        { key: rateLimitKey },
-        'SET #count = if_not_exists(#count, :zero) + :inc, expiresAt = :expiresAt',
-        {
-          ':zero': 0,
-          ':inc': 1,
-          ':expiresAt': expiresAt,
-          '#count': 'count',
-        }
-      );
-
-      return {
-        allowed: true,
-        remaining: limit - currentCount - 1,
-        resetAt: expiresAt,
-      };
-    } catch (error) {
-      // On error, allow the request (fail open)
-      console.error('Rate limit check failed', error);
-      return {
-        allowed: true,
-        remaining: limit,
-        resetAt: expiresAt,
-      };
-    }
-  }
-}
-```
-
----
-
-## Best Practices
-
-### 1. Use TTL for Automatic Cleanup
-
-```typescript
-// Always set TTL for temporary data
-await this.dynamoDB.put(tableName, {
-  ...item,
-  ttl: Math.floor(Date.now() / 1000) + expirationSeconds,
-});
-```
-
-### 2. Handle Errors Gracefully
-
-```typescript
-try {
-  const item = await this.dynamoDB.get(tableName, key);
-  return item;
-} catch (error) {
-  // Fallback to PostgreSQL
-  console.warn('DynamoDB error, falling back to PostgreSQL', error);
-  return this.postgresRepository.findById(key.id);
-}
-```
-
-### 3. Use Batch Operations
-
-```typescript
-// Use batch writes for multiple items
-import { BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
-
-const items = programs.map(program => ({
-  PutRequest: {
-    Item: {
-      programId: program.id,
-      ...program,
-      ttl: Math.floor(Date.now() / 1000) + 1800,
-    },
-  },
-}));
-
-await docClient.send(
-  new BatchWriteCommand({
-    RequestItems: {
-      [tableName]: items,
-    },
-  })
-);
-```
-
-### 4. Monitor Performance
-
-```typescript
-// Add performance monitoring
-const startTime = Date.now();
-const item = await this.dynamoDB.get(tableName, key);
-const duration = Date.now() - startTime;
-
-if (duration > 100) {
-  console.warn(`Slow DynamoDB query: ${duration}ms`);
-}
-```
-
----
-
-## Migration Strategy
-
-### Phase 1: Dual Write (Both PostgreSQL and DynamoDB)
-
-```typescript
-async createProgram(program: CreateProgramDto) {
-  // Write to PostgreSQL (source of truth)
-  const created = await this.programRepository.create(program);
-
-  // Write to DynamoDB (async, don't block)
-  this.dynamoDB
-    .put('mediamesh-discovery-hot-data', {
-      programId: created.id,
-      ...created,
-      ttl: Math.floor(Date.now() / 1000) + 1800,
-    })
-    .catch(console.error);
-
-  return created;
-}
-```
-
-### Phase 2: Read from DynamoDB with Fallback
-
-```typescript
-async getProgram(id: string) {
-  // Try DynamoDB first
-  const cached = await this.dynamoDB
-    .get('mediamesh-discovery-hot-data', { programId: id })
-    .catch(() => null);
-
-  if (cached) return cached;
-
-  // Fallback to PostgreSQL
-  return this.programRepository.findById(id);
-}
-```
-
-### Phase 3: Full Migration (DynamoDB Primary)
-
-Once validated, make DynamoDB the primary read source for hot data.
-
----
-
-## Environment Variables
-
-```bash
-# .env
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your-access-key  # Only for local development
-AWS_SECRET_ACCESS_KEY=your-secret-key  # Only for local development
-
-# DynamoDB Table Names
-DYNAMODB_DISCOVERY_TABLE=mediamesh-discovery-hot-data
-DYNAMODB_SEARCH_TABLE=mediamesh-search-index
-DYNAMODB_RATE_LIMIT_TABLE=mediamesh-rate-limits
-```
-
-**Note**: In production (ECS/EKS), use IAM roles instead of access keys.
-
----
-
-## Testing
-
-### Local Testing with DynamoDB Local
-
-```bash
-# Run DynamoDB Local
+# Or standalone
 docker run -p 8000:8000 amazon/dynamodb-local
-
-# Set endpoint
-export AWS_ENDPOINT_URL=http://localhost:8000
 ```
 
-```typescript
-// Test configuration
-const dynamoDBClient = new DynamoDBClient({
-  region: 'local',
-  endpoint: process.env.AWS_ENDPOINT_URL,
-  credentials: {
-    accessKeyId: 'local',
-    secretAccessKey: 'local',
-  },
-});
+### Verify Tables
+
+```bash
+# List tables
+aws dynamodb list-tables --endpoint-url http://localhost:8000
+
+# Describe table
+aws dynamodb describe-table \
+  --table-name mediamesh-trending \
+  --endpoint-url http://localhost:8000
 ```
 
----
+### Test Queries
 
-## Cost Optimization
+```bash
+# Query trending
+aws dynamodb query \
+  --table-name mediamesh-trending \
+  --key-condition-expression "contentType = :ct" \
+  --expression-attribute-values '{":ct":{"S":"PROGRAM"}}' \
+  --endpoint-url http://localhost:8000
 
-1. **Use On-Demand** for unpredictable traffic
-2. **Use Provisioned** for predictable workloads (cheaper)
-3. **Enable Auto-Scaling** for provisioned tables
-4. **Use TTL** to automatically delete expired data
-5. **Minimize GSI** (each GSI costs extra)
-6. **Use Batch Operations** to reduce write costs
+# Get item
+aws dynamodb get-item \
+  --table-name mediamesh-search-index \
+  --key '{"contentId":{"S":"uuid"}}' \
+  --endpoint-url http://localhost:8000
+```
 
----
+## Performance Considerations
 
-For more details, see:
-- [AWS Deployment Guide](./AWS_DEPLOYMENT.md)
-- [Scalability Guide](../SCALABILITY_GUIDE.md)
+### DynamoDB Benefits
+
+- **Low Latency**: Single-digit millisecond reads
+- **Automatic Scaling**: Handles traffic spikes
+- **TTL**: Automatic cleanup of expired items
+- **NoSQL**: Flexible schema for hot data
+
+### Limitations
+
+- **No Full-Text Search**: DynamoDB doesn't support full-text search natively
+- **Query Limitations**: Limited query patterns (partition key required)
+- **Cost**: On-demand pricing can be expensive at scale
+
+### Best Practices
+
+1. **Use DynamoDB for Hot Data**: Trending, popular, frequently accessed
+2. **Use PostgreSQL for Complex Queries**: Full-text search, complex filters
+3. **Implement TTL**: Automatic cleanup prevents table growth
+4. **Monitor Costs**: Use CloudWatch to track DynamoDB usage
+5. **Use GSI Sparingly**: Global Secondary Indexes add cost
+
+## Migration Path
+
+### Phase 1: Development (Current)
+- DynamoDB Local for testing
+- Both services write to DynamoDB and PostgreSQL
+- Fallback to PostgreSQL if DynamoDB fails
+
+### Phase 2: Production
+- AWS DynamoDB tables
+- IAM roles configured
+- Monitoring and alerting
+
+### Phase 3: Optimization
+- OpenSearch/Elasticsearch for full-text search
+- DynamoDB for simple queries and hot data
+- PostgreSQL as source of truth
+
+## Troubleshooting
+
+### DynamoDB Connection Failed
+
+**Error**: "Unable to connect to DynamoDB"
+
+**Solutions:**
+1. Verify DynamoDB Local is running: `docker compose ps dynamodb-local`
+2. Check endpoint: `DYNAMODB_ENDPOINT=http://dynamodb-local:8000`
+3. Test connection: `curl http://localhost:8000`
+
+### Table Creation Failed
+
+**Error**: "Table already exists" or "Access denied"
+
+**Solutions:**
+1. Check table name conflicts
+2. Verify IAM permissions (production)
+3. Check DynamoDB Local logs
+
+### TTL Not Working
+
+**Symptoms**: Items not expiring
+
+**Solutions:**
+1. Verify TTL attribute name: `DYNAMODB_TTL_ATTRIBUTE=ttl`
+2. Check TTL value format (Unix timestamp in seconds)
+3. Ensure TTL is enabled on table
+
+## Related Documentation
+
+- [AWS DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
+- [DynamoDB Local Guide](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html)
+- [Deployment Guide](./DEPLOYMENT.md)

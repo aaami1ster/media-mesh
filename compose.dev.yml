@@ -90,6 +90,23 @@ services:
     networks:
       - mediamesh-network
 
+  # DynamoDB Local for Development
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: mediamesh-dynamodb-local
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - mediamesh-network
+
   # Kafka UI for Monitoring (Port 8090)
   kafka-ui:
     container_name: mediamesh-kafka-ui
@@ -437,6 +454,18 @@ services:
       REDIS_TTL_PROGRAMS: 1800 # 30 minutes
       REDIS_TTL_SEARCH: 300 # 5 minutes
       REDIS_TTL_TRENDING: 600 # 10 minutes
+      REDIS_TTL_POPULAR: 300 # 5 minutes
+      REDIS_TTL_EPISODES: 300 # 5 minutes
+
+      # DynamoDB Configuration
+      DYNAMODB_ENABLED: "true"
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      DYNAMODB_TABLE_TRENDING: mediamesh-trending
+      DYNAMODB_TABLE_POPULAR: mediamesh-popular
+      DYNAMODB_TTL_ATTRIBUTE: ttl
 
     ports:
       - "8092:8092"
@@ -444,6 +473,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      dynamodb-local:
         condition: service_healthy
     healthcheck:
       test:
@@ -491,12 +522,24 @@ services:
       KAFKA_TOPIC_CONTENT_EVENTS: content.events
       KAFKA_TOPIC_INGEST_EVENTS: ingest.events
 
+      # DynamoDB Configuration
+      DYNAMODB_ENABLED: "true"
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      DYNAMODB_TABLE_SEARCH_INDEX: mediamesh-search-index
+      DYNAMODB_TTL_ATTRIBUTE: ttl
+      DYNAMODB_TTL_SECONDS: 2592000
+
     ports:
       - "8091:8091"
     depends_on:
       postgres:
         condition: service_healthy
       broker:
+        condition: service_healthy
+      dynamodb-local:
         condition: service_healthy
     healthcheck:
       test:
@@ -562,6 +605,8 @@ services:
       redis:
         condition: service_healthy
       broker:
+        condition: service_healthy
+      dynamodb-local:
         condition: service_healthy
     healthcheck:
       test:

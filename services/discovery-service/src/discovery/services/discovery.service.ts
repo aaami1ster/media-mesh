@@ -1,8 +1,9 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { DiscoveryRepository } from '../repositories/discovery.repository';
+import { DynamoDBDiscoveryRepository } from '../repositories/dynamodb-discovery.repository';
 import { ContentStatus, ContentType } from '@mediamesh/shared';
-import { REDIS_CONFIG } from '../../config/env.constants';
+import { REDIS_CONFIG, DYNAMODB_CONFIG } from '../../config/env.constants';
 
 /**
  * Cache key generators
@@ -33,6 +34,7 @@ export class DiscoveryService {
 
   constructor(
     private readonly repository: DiscoveryRepository,
+    private readonly dynamoDBRepository: DynamoDBDiscoveryRepository,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
@@ -168,52 +170,116 @@ export class DiscoveryService {
 
   /**
    * Get trending content
+   * 
+   * Cache-aside pattern: DynamoDB → Redis → PostgreSQL
    */
   async getTrending(
     contentType?: ContentType,
     limit: number = 10,
   ): Promise<any[]> {
     const cacheKey = CacheKeys.trending(contentType || 'all', limit);
+    const contentTypeKey = contentType || 'all';
 
-    // Try cache first
+    // 1. Try Redis cache first
     const cached = await this.cacheManager.get<any[]>(cacheKey);
     if (cached) {
-      this.logger.debug(`Cache hit for trending: ${contentType || 'all'}`);
+      this.logger.debug(`Redis cache hit for trending: ${contentTypeKey}`);
       return cached;
     }
 
-    // Cache miss - query database
-    this.logger.debug(`Cache miss for trending: ${contentType || 'all'}`);
+    // 2. Try DynamoDB (hot data)
+    if (DYNAMODB_CONFIG.ENABLED) {
+      const dynamoResult = await this.dynamoDBRepository.getTrending(
+        contentTypeKey,
+        limit,
+      );
+      if (dynamoResult) {
+        this.logger.debug(`DynamoDB hit for trending: ${contentTypeKey}`);
+        // Store in Redis cache
+        await this.cacheManager.set(
+          cacheKey,
+          dynamoResult,
+          REDIS_CONFIG.TTL.TRENDING * 1000,
+        );
+        return dynamoResult;
+      }
+    }
+
+    // 3. Fallback to PostgreSQL
+    this.logger.debug(`Cache miss for trending: ${contentTypeKey}, querying PostgreSQL`);
     const trending = await this.repository.findTrending(contentType, limit);
 
-    // Store in cache
-    await this.cacheManager.set(cacheKey, trending, REDIS_CONFIG.TTL.TRENDING * 1000);
+    // Store in both DynamoDB and Redis
+    if (DYNAMODB_CONFIG.ENABLED) {
+      await this.dynamoDBRepository.storeTrending(
+        contentTypeKey,
+        trending,
+        REDIS_CONFIG.TTL.TRENDING,
+      );
+    }
+    await this.cacheManager.set(
+      cacheKey,
+      trending,
+      REDIS_CONFIG.TTL.TRENDING * 1000,
+    );
 
     return trending;
   }
 
   /**
    * Get popular content
+   * 
+   * Cache-aside pattern: DynamoDB → Redis → PostgreSQL
    */
   async getPopular(
     contentType?: ContentType,
     limit: number = 10,
   ): Promise<any[]> {
     const cacheKey = CacheKeys.popular(contentType || 'all', limit);
+    const contentTypeKey = contentType || 'all';
 
-    // Try cache first
+    // 1. Try Redis cache first
     const cached = await this.cacheManager.get<any[]>(cacheKey);
     if (cached) {
-      this.logger.debug(`Cache hit for popular: ${contentType || 'all'}`);
+      this.logger.debug(`Redis cache hit for popular: ${contentTypeKey}`);
       return cached;
     }
 
-    // Cache miss - query database
-    this.logger.debug(`Cache miss for popular: ${contentType || 'all'}`);
+    // 2. Try DynamoDB (hot data)
+    if (DYNAMODB_CONFIG.ENABLED) {
+      const dynamoResult = await this.dynamoDBRepository.getPopular(
+        contentTypeKey,
+        limit,
+      );
+      if (dynamoResult) {
+        this.logger.debug(`DynamoDB hit for popular: ${contentTypeKey}`);
+        // Store in Redis cache
+        await this.cacheManager.set(
+          cacheKey,
+          dynamoResult,
+          REDIS_CONFIG.TTL.POPULAR * 1000,
+        );
+        return dynamoResult;
+      }
+    }
+
+    // 3. Fallback to PostgreSQL
+    this.logger.debug(`Cache miss for popular: ${contentTypeKey}, querying PostgreSQL`);
     const popular = await this.repository.findPopular(contentType, limit);
 
-    // Store in cache
-    await this.cacheManager.set(cacheKey, popular, REDIS_CONFIG.TTL.POPULAR * 1000);
+    // Store in both DynamoDB and Redis
+    if (DYNAMODB_CONFIG.ENABLED) {
+      await this.dynamoDBRepository.storePopular(
+        contentTypeKey,
+        popular,
+        REDIS_CONFIG.TTL.POPULAR,
+      );
+    }
+    await this.cacheManager.set(
+      cacheKey,
+      popular,
+      REDIS_CONFIG.TTL.POPULAR * 1000,
+    );
 
     return popular;
   }

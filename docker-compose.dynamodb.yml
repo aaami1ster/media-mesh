@@ -1,0 +1,23 @@
+# DynamoDB Local for Development
+# Run with: docker compose -f docker-compose.dynamodb.yml up -d
+
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: mediamesh-dynamodb-local
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - mediamesh-network
+
+networks:
+  mediamesh-network:
+    external: true
