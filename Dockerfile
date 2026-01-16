@@ -59,7 +59,7 @@ COPY --from=builder /app/services/media-service/dist ./services/media-service/di
 COPY --from=builder /app/services/ingest-service/dist ./services/ingest-service/dist
 COPY --from=builder /app/services/discovery-service/dist ./services/discovery-service/dist
 COPY --from=builder /app/services/search-service/dist ./services/search-service/dist
-# Copy shared module dist
+# Copy shared module dist (package.json main field points to dist/index.js)
 COPY --from=builder /app/shared/dist ./shared/dist
 
 # Set environment variables
