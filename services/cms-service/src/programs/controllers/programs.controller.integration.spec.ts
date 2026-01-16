@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { ProgramsController } from './programs.controller';
@@ -7,7 +8,7 @@ import { ProgramService } from '../services/program.service';
 import { ProgramRepository } from '../repositories/program.repository';
 import { KafkaService } from '../../kafka/kafka.service';
 import { Program } from '../entities/program.entity';
-import { ContentStatus } from '@mediamesh/shared';
+import { ContentStatus, JwtAuthGuard, RolesGuard, UserRoles } from '@mediamesh/shared';
 
 describe('ProgramsController (integration)', () => {
   let app: INestApplication;
@@ -57,8 +58,24 @@ describe('ProgramsController (integration)', () => {
           provide: KafkaService,
           useValue: mockKafkaService,
         },
+        {
+          provide: JwtService,
+          useValue: {
+            signAsync: jest.fn(),
+            verifyAsync: jest.fn(),
+          },
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: jest.fn(() => true),
+      })
+      .overrideGuard(RolesGuard)
+      .useValue({
+        canActivate: jest.fn(() => true),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication(new FastifyAdapter());
     app.useGlobalPipes(

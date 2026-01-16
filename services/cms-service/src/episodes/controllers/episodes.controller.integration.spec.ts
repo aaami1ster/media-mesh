@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { EpisodesController } from './episodes.controller';
@@ -9,7 +10,7 @@ import { ProgramRepository } from '../../programs/repositories/program.repositor
 import { KafkaService } from '../../kafka/kafka.service';
 import { Episode } from '../entities/episode.entity';
 import { Program } from '../../programs/entities/program.entity';
-import { ContentStatus } from '@mediamesh/shared';
+import { ContentStatus, JwtAuthGuard, RolesGuard } from '@mediamesh/shared';
 
 describe('EpisodesController (integration)', () => {
   let app: INestApplication;
@@ -83,8 +84,24 @@ describe('EpisodesController (integration)', () => {
           provide: KafkaService,
           useValue: mockKafkaService,
         },
+        {
+          provide: JwtService,
+          useValue: {
+            signAsync: jest.fn(),
+            verifyAsync: jest.fn(),
+          },
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: jest.fn(() => true),
+      })
+      .overrideGuard(RolesGuard)
+      .useValue({
+        canActivate: jest.fn(() => true),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication(new FastifyAdapter());
     app.useGlobalPipes(
@@ -237,7 +254,7 @@ describe('EpisodesController (integration)', () => {
     });
 
     it('should return 409 if episode number already exists', async () => {
-      const existingEpisode = { ...mockEpisode, toDto: jest.fn(), episodeNumber: 1, toDto: jest.fn() };
+      const existingEpisode = { ...mockEpisode, episodeNumber: 1, toDto: jest.fn() };
       programRepository.findById.mockResolvedValue(mockProgram);
       episodeRepository.findByProgramId.mockResolvedValue([existingEpisode]);
 
@@ -260,7 +277,7 @@ describe('EpisodesController (integration)', () => {
 
       episodeRepository.findById.mockResolvedValue(mockEpisode);
       episodeRepository.findByProgramId.mockResolvedValue([]);
-      episodeRepository.update.mockResolvedValue({ ...mockEpisode, toDto: jest.fn(), ...updateDto, toDto: jest.fn() });
+      episodeRepository.update.mockResolvedValue({ ...mockEpisode, ...updateDto, toDto: jest.fn() });
       programRepository.findById.mockResolvedValue(mockProgram);
 
       const response = await request(app.getHttpServer())

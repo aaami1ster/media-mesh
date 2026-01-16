@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 import { UserDto } from '../dto';
-import '../types/fastify';
+import '../types/fastify.d';
 
 /**
  * Interface for user in request

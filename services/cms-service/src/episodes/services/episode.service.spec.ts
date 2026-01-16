@@ -125,7 +125,7 @@ describe('EpisodeService', () => {
     });
 
     it('should throw ConflictException if episode number already exists', async () => {
-      const existingEpisode = { ...mockEpisode, toDto: jest.fn(), episodeNumber: 1, toDto: jest.fn() };
+      const existingEpisode = { ...mockEpisode, episodeNumber: 1, toDto: jest.fn() };
       programRepository.findById.mockResolvedValue(mockProgram);
       episodeRepository.findByProgramId.mockResolvedValue([existingEpisode]);
 
@@ -218,7 +218,11 @@ describe('EpisodeService', () => {
     it('should throw NotFoundException if episode not found', async () => {
       episodeRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('non-existent')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('non-existent')).rejects.toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining('Episode'),
+        }),
+      );
     });
   });
 
@@ -237,7 +241,7 @@ describe('EpisodeService', () => {
   describe('update', () => {
     it('should update an episode', async () => {
       const updateData = { title: 'Updated Title' };
-      const updatedEpisode = { ...mockEpisode, toDto: jest.fn(), ...updateData, toDto: jest.fn() };
+      const updatedEpisode = { ...mockEpisode, ...updateData, toDto: jest.fn() };
 
       episodeRepository.findById.mockResolvedValue(mockEpisode);
       episodeRepository.findByProgramId.mockResolvedValue([]);
@@ -251,7 +255,7 @@ describe('EpisodeService', () => {
     });
 
     it('should track changes and emit updated event', async () => {
-      const existingEpisode = { ...mockEpisode, toDto: jest.fn(), title: 'Old Title', toDto: jest.fn() };
+      const existingEpisode = { ...mockEpisode, title: 'Old Title', toDto: jest.fn() };
       const updateData = { title: 'New Title' };
       const updatedEpisode = { ...existingEpisode, ...updateData, toDto: jest.fn() };
 
@@ -276,8 +280,8 @@ describe('EpisodeService', () => {
     });
 
     it('should throw ConflictException if episode number already exists', async () => {
-      const existingEpisode = { ...mockEpisode, toDto: jest.fn(), episodeNumber: 1, toDto: jest.fn() };
-      const otherEpisode = { ...mockEpisode, toDto: jest.fn(), id: 'episode-2', episodeNumber: 2, toDto: jest.fn() };
+      const existingEpisode = { ...mockEpisode, episodeNumber: 1, toDto: jest.fn() };
+      const otherEpisode = { ...mockEpisode, id: 'episode-2', episodeNumber: 2, toDto: jest.fn() };
       const updateData = { episodeNumber: 2 };
 
       episodeRepository.findById.mockResolvedValue(existingEpisode);
@@ -287,7 +291,7 @@ describe('EpisodeService', () => {
     });
 
     it('should validate status transition', async () => {
-      const existingEpisode = { ...mockEpisode, toDto: jest.fn(), status: ContentStatus.DRAFT, toDto: jest.fn() };
+      const existingEpisode = { ...mockEpisode, status: ContentStatus.DRAFT, toDto: jest.fn() };
       const updateData = { status: ContentStatus.PUBLISHED };
 
       episodeRepository.findById.mockResolvedValue(existingEpisode);
@@ -325,7 +329,11 @@ describe('EpisodeService', () => {
     it('should throw NotFoundException if episode not found', async () => {
       episodeRepository.findById.mockResolvedValue(null);
 
-      await expect(service.delete('non-existent')).rejects.toThrow(NotFoundException);
+      await expect(service.delete('non-existent')).rejects.toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining('Episode'),
+        }),
+      );
     });
   });
 

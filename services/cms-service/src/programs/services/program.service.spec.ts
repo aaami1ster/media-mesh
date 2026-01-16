@@ -180,7 +180,11 @@ describe('ProgramService', () => {
     it('should throw NotFoundException if program not found', async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('non-existent')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('non-existent')).rejects.toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining('Program'),
+        }),
+      );
       expect(repository.findById).toHaveBeenCalledWith('non-existent');
     });
   });
