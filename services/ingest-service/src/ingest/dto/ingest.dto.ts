@@ -25,7 +25,11 @@ export class CreateIngestJobDto {
   @IsUrl({}, { message: 'Source URL must be a valid URL' })
   sourceUrl: string;
 
-  @ApiPropertyOptional({ description: 'Additional metadata', type: 'object' })
+  @ApiPropertyOptional({ 
+    description: 'Additional metadata', 
+    type: 'object',
+    additionalProperties: true 
+  })
   @IsOptional()
   @IsObject()
   metadata?: Record<string, any>;
@@ -56,7 +60,10 @@ export class IngestJobDto {
   @IsUUID()
   contentId?: string;
 
-  @ApiPropertyOptional({ type: 'object' })
+  @ApiPropertyOptional({ 
+    type: 'object',
+    additionalProperties: true 
+  })
   @IsOptional()
   @IsObject()
   metadata?: Record<string, any>;
