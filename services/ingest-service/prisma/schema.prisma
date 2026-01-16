@@ -1,0 +1,43 @@
+// Prisma Schema for Ingest Service
+// Database: ingest_db
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  YOUTUBE
+  RSS
+  API
+}
+
+enum IngestStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model IngestJob {
+  id          String       @id @default(uuid())
+  sourceType  SourceType
+  sourceUrl   String
+  status      IngestStatus @default(PENDING)
+  contentId   String?      // FK to created content
+  metadata    Json?        // Source-specific metadata
+  errorMessage String?
+  retryCount  Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("ingest_jobs")
+  @@index([status])
+  @@index([sourceType])
+  @@index([createdAt])
+  @@index([contentId])
+}

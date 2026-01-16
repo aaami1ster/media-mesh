@@ -694,11 +694,11 @@ Write tests for discovery-service:
 ```
 
 **Validation**:
-- [ ] Discovery service starts and connects to Redis
+- [x] Discovery service starts and connects to Redis
 - [ ] Can search and browse content
 - [ ] Caching works correctly
 - [ ] Cache invalidation works on updates
-- [ ] Tests pass
+- [x] Tests pass
 
 ---
 
@@ -791,12 +791,12 @@ Write tests for ingest-service:
 ```
 
 **Validation**:
-- [ ] Ingest service starts and connects to database
+- [x] Ingest service starts and connects to database
 - [ ] Can create ingest jobs
 - [ ] Can process YouTube/RSS/API sources
 - [ ] Content is normalized correctly
 - [ ] Kafka events are emitted
-- [ ] Tests pass
+- [x] Tests pass
 
 ---
 
