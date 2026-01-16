@@ -10,6 +10,7 @@ import {
   HttpRetryService,
 } from '@mediamesh/shared';
 import { RESILIENCE_CONFIG } from '../config/env.constants';
+import { AuthModule } from '../auth/auth.module';
 
 /**
  * Proxy Module
@@ -23,6 +24,7 @@ import { RESILIENCE_CONFIG } from '../config/env.constants';
       timeout: RESILIENCE_CONFIG.REQUEST_TIMEOUT,
       maxRedirects: 5,
     }),
+    AuthModule, // Import AuthModule to access JwtService for JwtAuthGuard
   ],
   controllers: [
     CmsController,
