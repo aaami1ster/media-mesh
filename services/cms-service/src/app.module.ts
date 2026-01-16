@@ -4,9 +4,10 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProgramsModule } from './programs/programs.module';
 import { EpisodesModule } from './episodes/episodes.module';
+import { KafkaModule } from './kafka/kafka.module';
 
 @Module({
-  imports: [PrismaModule, ProgramsModule, EpisodesModule],
+  imports: [PrismaModule, KafkaModule, ProgramsModule, EpisodesModule],
   controllers: [AppController],
   providers: [AppService],
 })

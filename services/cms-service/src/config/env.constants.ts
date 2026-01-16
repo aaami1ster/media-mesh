@@ -23,3 +23,9 @@ export const SERVER_CONFIG = {
   PORT: parseInt(process.env.PORT || '8082', 10),
   NODE_ENV: process.env.NODE_ENV || 'development',
 };
+
+// Kafka configuration
+export const KAFKA_CONFIG = {
+  BROKER: process.env.KAFKA_BROKER || 'localhost:9092',
+  CLIENT_ID: process.env.KAFKA_CLIENT_ID || 'cms-service',
+};

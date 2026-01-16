@@ -3,6 +3,7 @@ import { ProgramRepository } from '../repositories/program.repository';
 import { Program } from '../entities/program.entity';
 import { ContentStatus } from '@mediamesh/shared';
 import { throwIfNotFound } from '@mediamesh/shared';
+import { KafkaService } from '../../kafka/kafka.service';
 
 /**
  * Program Service
@@ -14,7 +15,10 @@ import { throwIfNotFound } from '@mediamesh/shared';
 export class ProgramService {
   private readonly logger = new Logger(ProgramService.name);
 
-  constructor(private readonly programRepository: ProgramRepository) {}
+  constructor(
+    private readonly programRepository: ProgramRepository,
+    private readonly kafkaService: KafkaService,
+  ) {}
 
   /**
    * Create a new program
@@ -40,6 +44,18 @@ export class ProgramService {
     });
 
     this.logger.log(`Program created: ${program.id} (${program.title})`);
+
+    // Emit content.created event
+    await this.kafkaService.emitContentCreated({
+      contentId: program.id,
+      contentType: 'PROGRAM',
+      title: program.title,
+      description: program.description,
+      status: program.status,
+      metadataId: program.metadataId,
+      createdAt: program.createdAt,
+    });
+
     return program;
   }
 
@@ -83,6 +99,21 @@ export class ProgramService {
     // Check if program exists
     const existingProgram = await this.findOne(id);
 
+    // Track changes for event
+    const changes: Record<string, { old: any; new: any }> = {};
+    if (data.title !== undefined && data.title !== existingProgram.title) {
+      changes.title = { old: existingProgram.title, new: data.title };
+    }
+    if (data.description !== undefined && data.description !== existingProgram.description) {
+      changes.description = { old: existingProgram.description, new: data.description };
+    }
+    if (data.status !== undefined && data.status !== existingProgram.status) {
+      changes.status = { old: existingProgram.status, new: data.status };
+    }
+    if (data.metadataId !== undefined && data.metadataId !== existingProgram.metadataId) {
+      changes.metadataId = { old: existingProgram.metadataId, new: data.metadataId };
+    }
+
     // Validate status transition
     if (data.status) {
       this.validateStatusTransition(existingProgram.status, data.status);
@@ -107,6 +138,27 @@ export class ProgramService {
     });
 
     this.logger.log(`Program updated: ${id}`);
+
+    // Emit content.updated event if there were changes
+    if (Object.keys(changes).length > 0) {
+      await this.kafkaService.emitContentUpdated({
+        contentId: program.id,
+        contentType: 'PROGRAM',
+        title: program.title,
+        changes,
+        program: {
+          id: program.id,
+          title: program.title,
+          description: program.description,
+          status: program.status,
+          metadataId: program.metadataId,
+          createdAt: program.createdAt.toISOString(),
+          updatedAt: program.updatedAt.toISOString(),
+          publishedAt: program.publishedAt?.toISOString(),
+        },
+      });
+    }
+
     return program;
   }
 
@@ -149,6 +201,25 @@ export class ProgramService {
     });
 
     this.logger.log(`Program published: ${id}`);
+
+    // Emit content.published event
+    await this.kafkaService.emitContentPublished({
+      contentId: publishedProgram.id,
+      contentType: 'PROGRAM',
+      title: publishedProgram.title,
+      publishedAt: publishedProgram.publishedAt!,
+      program: {
+        id: publishedProgram.id,
+        title: publishedProgram.title,
+        description: publishedProgram.description,
+        status: publishedProgram.status,
+        metadataId: publishedProgram.metadataId,
+        createdAt: publishedProgram.createdAt.toISOString(),
+        updatedAt: publishedProgram.updatedAt.toISOString(),
+        publishedAt: publishedProgram.publishedAt?.toISOString(),
+      },
+    });
+
     return publishedProgram;
   }
 

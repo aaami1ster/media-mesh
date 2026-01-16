@@ -4,6 +4,7 @@ import { ProgramRepository } from '../../programs/repositories/program.repositor
 import { Episode } from '../entities/episode.entity';
 import { ContentStatus } from '@mediamesh/shared';
 import { throwIfNotFound } from '@mediamesh/shared';
+import { KafkaService } from '../../kafka/kafka.service';
 
 /**
  * Episode Service
@@ -18,6 +19,7 @@ export class EpisodeService {
   constructor(
     private readonly episodeRepository: EpisodeRepository,
     private readonly programRepository: ProgramRepository,
+    private readonly kafkaService: KafkaService,
   ) {}
 
   /**
@@ -74,6 +76,30 @@ export class EpisodeService {
     });
 
     this.logger.log(`Episode created: ${episode.id} (${episode.title})`);
+
+    // Emit content.created event (program already fetched above)
+    await this.kafkaService.emitContentCreated({
+      contentId: episode.id,
+      contentType: 'EPISODE',
+      title: episode.title,
+      description: episode.description,
+      programId: episode.programId,
+      episodeNumber: episode.episodeNumber,
+      status: episode.status,
+      metadataId: episode.metadataId,
+      createdAt: episode.createdAt,
+      program: {
+        id: program.id,
+        title: program.title,
+        description: program.description,
+        status: program.status,
+        metadataId: program.metadataId,
+        createdAt: program.createdAt.toISOString(),
+        updatedAt: program.updatedAt.toISOString(),
+        publishedAt: program.publishedAt?.toISOString(),
+      },
+    });
+
     return episode;
   }
 
@@ -160,6 +186,27 @@ export class EpisodeService {
       throw new BadRequestException('Episode duration must be non-negative');
     }
 
+    // Track changes for event
+    const changes: Record<string, { old: any; new: any }> = {};
+    if (data.title !== undefined && data.title !== existingEpisode.title) {
+      changes.title = { old: existingEpisode.title, new: data.title };
+    }
+    if (data.description !== undefined && data.description !== existingEpisode.description) {
+      changes.description = { old: existingEpisode.description, new: data.description };
+    }
+    if (data.episodeNumber !== undefined && data.episodeNumber !== existingEpisode.episodeNumber) {
+      changes.episodeNumber = { old: existingEpisode.episodeNumber, new: data.episodeNumber };
+    }
+    if (data.duration !== undefined && data.duration !== existingEpisode.duration) {
+      changes.duration = { old: existingEpisode.duration, new: data.duration };
+    }
+    if (data.status !== undefined && data.status !== existingEpisode.status) {
+      changes.status = { old: existingEpisode.status, new: data.status };
+    }
+    if (data.metadataId !== undefined && data.metadataId !== existingEpisode.metadataId) {
+      changes.metadataId = { old: existingEpisode.metadataId, new: data.metadataId };
+    }
+
     // Validate status transition
     if (data.status !== undefined) {
       this.validateStatusTransition(existingEpisode.status, data.status);
@@ -176,6 +223,30 @@ export class EpisodeService {
     });
 
     this.logger.log(`Episode updated: ${id}`);
+
+    // Get program data for event
+    const program = await this.programRepository.findById(episode.programId);
+
+    // Emit content.updated event if there were changes
+    if (Object.keys(changes).length > 0) {
+      await this.kafkaService.emitContentUpdated({
+        contentId: episode.id,
+        contentType: 'EPISODE',
+        title: episode.title,
+        changes,
+        program: program ? {
+          id: program.id,
+          title: program.title,
+          description: program.description,
+          status: program.status,
+          metadataId: program.metadataId,
+          createdAt: program.createdAt.toISOString(),
+          updatedAt: program.updatedAt.toISOString(),
+          publishedAt: program.publishedAt?.toISOString(),
+        } : undefined,
+      });
+    }
+
     return episode;
   }
 
