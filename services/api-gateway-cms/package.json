@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@mediamesh/shared": "*",
+    "@nestjs-redis/client": "^0.11.2",
+    "@nestjs-redis/throttler-storage": "^0.11.2",
     "@nestjs/axios": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
@@ -26,11 +28,10 @@
     "@nestjs/platform-fastify": "^11.0.1",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/throttler": "^5.1.1",
-    "@nestjs-redis/client": "^0.11.2",
-    "@nestjs-redis/throttler-storage": "^0.11.2",
     "axios": "^1.7.9",
     "cache-manager": "^5.7.6",
     "cache-manager-redis-yet": "^5.1.1",
+    "dotenv": "^17.2.3",
     "ioredis": "^5.4.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
