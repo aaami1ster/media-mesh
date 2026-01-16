@@ -42,12 +42,23 @@ async function bootstrap() {
 - **Public Access**: Most endpoints are public (no authentication required)
 - **Optional Authentication**: JWT authentication for personalized features
 - **Rate Limiting**: Redis-based rate limiting to prevent abuse
+- **Resilience**: Automatic retry, circuit breaker, and timeout protection
+
+## Rate Limits
+- **Public (IP-based)**: 100 requests/minute
+- **Authenticated (User-based)**: 200 requests/minute
+- **Search endpoints**: 60 requests/minute (stricter due to expensive operations)
 
 ## GraphQL
 Access GraphQL Playground at: /graphql
 
 ## REST API
-All REST endpoints are versioned: /api/v1/...`,
+All REST endpoints are versioned: /api/v1/...
+
+## Resilience
+- Automatic retry with exponential backoff
+- Circuit breaker pattern for service protection
+- 30-second timeout on all requests`,
     )
     .setVersion('1.0')
     .setContact('MediaMesh Team', 'https://mediamesh.example.com', 'support@mediamesh.example.com')

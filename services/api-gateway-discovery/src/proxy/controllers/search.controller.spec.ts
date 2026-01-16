@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SearchController } from './search.controller';
 import { ProxyService } from '../proxy.service';
+import { ThrottlerIPGuard } from '../../throttler/throttler-ip.guard';
 
 describe('SearchController', () => {
   let controller: SearchController;
@@ -19,7 +20,12 @@ describe('SearchController', () => {
           useValue: mockProxyService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(ThrottlerIPGuard)
+      .useValue({
+        canActivate: jest.fn(() => true),
+      })
+      .compile();
 
     controller = module.get<SearchController>(SearchController);
     proxyService = module.get(ProxyService);

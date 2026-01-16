@@ -5,6 +5,7 @@ import {
   Query,
   Req,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,11 +15,12 @@ import {
   ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public, TimeoutInterceptor } from '@mediamesh/shared';
 import { ProxyService } from '../proxy.service';
 import { Request } from 'express';
-import { RESILIENCE_CONFIG } from '../../config/env.constants';
+import { RESILIENCE_CONFIG, RATE_LIMIT_CONFIG } from '../../config/env.constants';
+import { ThrottlerIPGuard } from '../../throttler/throttler-ip.guard';
 
 /**
  * Discovery Controller
@@ -29,6 +31,7 @@ import { RESILIENCE_CONFIG } from '../../config/env.constants';
  */
 @ApiTags('Discovery')
 @Controller({ path: 'discovery', version: '1' })
+@UseGuards(ThrottlerIPGuard)
 @UseInterceptors(
   new TimeoutInterceptor({
     timeout: RESILIENCE_CONFIG.REQUEST_TIMEOUT,
@@ -43,10 +46,19 @@ export class DiscoveryController {
    * GET /api/v1/discovery/search
    */
   @Get('search')
-  @Throttle({ default: { limit: 50, ttl: 60000 } }) // Lower limit for search
+  @Throttle({
+    default: {
+      limit: RATE_LIMIT_CONFIG.SEARCH_LIMIT,
+      ttl: RATE_LIMIT_CONFIG.SEARCH_TTL * 1000,
+    },
+  })
   @ApiOperation({
     summary: 'Search content',
-    description: 'Search for programs and episodes. Public endpoint.',
+    description: `Search for programs and episodes. Public endpoint.
+    
+**Rate Limits:**
+- IP-based: ${RATE_LIMIT_CONFIG.SEARCH_LIMIT} requests per ${RATE_LIMIT_CONFIG.SEARCH_TTL} seconds
+- User-based (authenticated): ${RATE_LIMIT_CONFIG.SEARCH_LIMIT} requests per ${RATE_LIMIT_CONFIG.SEARCH_TTL} seconds`,
   })
   @ApiQuery({
     name: 'q',

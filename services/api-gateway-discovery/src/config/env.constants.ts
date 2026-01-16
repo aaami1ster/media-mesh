@@ -29,7 +29,9 @@ export const RATE_LIMIT_CONFIG = {
   DEFAULT_TTL: parseInt(process.env.RATE_LIMIT_DEFAULT_TTL || '60', 10), // seconds
   DEFAULT_LIMIT: parseInt(process.env.RATE_LIMIT_DEFAULT_LIMIT || '100', 10), // requests per TTL
   SEARCH_TTL: parseInt(process.env.RATE_LIMIT_SEARCH_TTL || '60', 10),
-  SEARCH_LIMIT: parseInt(process.env.RATE_LIMIT_SEARCH_LIMIT || '50', 10),
+  SEARCH_LIMIT: parseInt(process.env.RATE_LIMIT_SEARCH_LIMIT || '60', 10), // 60 requests/minute for search
+  AUTHENTICATED_TTL: parseInt(process.env.RATE_LIMIT_AUTHENTICATED_TTL || '60', 10),
+  AUTHENTICATED_LIMIT: parseInt(process.env.RATE_LIMIT_AUTHENTICATED_LIMIT || '200', 10), // Higher limit for authenticated users
 };
 
 // GraphQL configuration

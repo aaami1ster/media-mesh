@@ -4,7 +4,6 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProxyModule } from './proxy/proxy.module';
@@ -12,6 +11,7 @@ import { GraphqlModule } from './graphql/graphql.module';
 import { REDIS_CONFIG, RATE_LIMIT_CONFIG, GRAPHQL_CONFIG } from './config/env.constants';
 import { RedisModule, RedisToken } from '@nestjs-redis/client';
 import { RedisThrottlerStorage } from '@nestjs-redis/throttler-storage';
+import { ThrottlerIPGuard } from './throttler/throttler-ip.guard';
 
 @Module({
   imports: [
@@ -58,6 +58,9 @@ import { RedisThrottlerStorage } from '@nestjs-redis/throttler-storage';
   controllers: [AppController],
   providers: [
     AppService,
+    ThrottlerIPGuard,
+    // Note: ThrottlerIPGuard is applied at controller level
+    // Global guard is kept for fallback
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
