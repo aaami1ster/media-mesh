@@ -170,7 +170,8 @@ describe('UserService', () => {
       const userWithHashedPassword = {
         ...mockUser,
         password: hashedPassword,
-      };
+        toDto: mockUser.toDto,
+      } as any;
       userRepository.findByEmail.mockResolvedValue(userWithHashedPassword);
 
       // Act
@@ -204,7 +205,8 @@ describe('UserService', () => {
       const userWithHashedPassword = {
         ...mockUser,
         password: hashedPassword,
-      };
+        toDto: mockUser.toDto,
+      } as any;
       userRepository.findByEmail.mockResolvedValue(userWithHashedPassword);
 
       // Act
@@ -223,8 +225,8 @@ describe('UserService', () => {
         email: 'newemail@example.com',
         role: UserRoles.EDITOR,
       };
-      const oldUser = { ...mockUser, email: 'old@example.com', role: UserRoles.USER };
-      const updatedUser = { ...mockUser, ...updateData };
+      const oldUser = { ...mockUser, email: 'old@example.com', role: UserRoles.USER, toDto: mockUser.toDto } as any;
+      const updatedUser = { ...mockUser, ...updateData, toDto: mockUser.toDto } as any;
 
       userRepository.findById
         .mockResolvedValueOnce(oldUser) // First call for existence check

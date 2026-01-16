@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserService } from '../../users/services/user.service';
 import { KafkaService } from '../../kafka/kafka.service';
@@ -321,7 +321,7 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException if user not found', async () => {
       // Arrange
-      userService.findById.mockRejectedValue(new Error('User not found'));
+      userService.findById.mockRejectedValue(new NotFoundException('User not found'));
 
       // Act & Assert
       await expect(service.getUserById('non-existent')).rejects.toThrow(

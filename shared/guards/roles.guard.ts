@@ -10,6 +10,7 @@ import { FastifyRequest } from 'fastify';
 import { ROLES_KEY } from '../decorators';
 import { UserRole } from '../dto';
 import { RequestUser } from '../decorators/current-user.decorator';
+import { hasRolePermission, UserRoles } from '../constants';
 import '../types/fastify';
 
 /**
@@ -54,8 +55,19 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    // Check if user has one of the required roles
-    const hasRole = requiredRoles.some((role) => user.role === role);
+    // Check if user has one of the required roles or has higher permission
+    const hasRole = requiredRoles.some((role) => {
+      // Exact match
+      if (user.role === role) {
+        return true;
+      }
+      // Check role hierarchy (ADMIN can access EDITOR/USER routes, EDITOR can access USER routes)
+      try {
+        return hasRolePermission(user.role as unknown as UserRoles, role as unknown as UserRoles);
+      } catch {
+        return false;
+      }
+    });
 
     if (!hasRole) {
       this.logger.warn(

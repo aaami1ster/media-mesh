@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AuthController } from './auth.controller';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../../users/services/user.service';

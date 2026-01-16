@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from '../services/auth.service';
-import { LoginDto, RegisterDto, TokenResponseDto, UserDto } from '@mediamesh/shared';
+import { LoginDto, RegisterDto, TokenResponseDto, UserDto, JwtAuthGuard } from '@mediamesh/shared';
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
 
 describe('AuthController', () => {
@@ -40,7 +40,12 @@ describe('AuthController', () => {
           useValue: mockAuthService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: jest.fn(() => true),
+      })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     authService = module.get(AuthService);

@@ -4,6 +4,11 @@ import { JwtStrategy } from './jwt.strategy';
 import { AuthService } from '../services/auth.service';
 import { UserRoles } from '@mediamesh/shared';
 
+// Mock passport module
+jest.mock('passport', () => ({
+  use: jest.fn(),
+}));
+
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
   let authService: jest.Mocked<AuthService>;
