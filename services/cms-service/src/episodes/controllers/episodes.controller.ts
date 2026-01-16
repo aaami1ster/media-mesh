@@ -35,6 +35,7 @@ import { UserRole } from '@mediamesh/shared';
  * Create Episode DTO (for request body)
  */
 import { IsString, IsUUID, IsInt, Min, IsOptional, IsEnum, MinLength, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
 
 class CreateEpisodeDto {
   @IsUUID()
@@ -50,11 +51,13 @@ class CreateEpisodeDto {
   @MaxLength(1000)
   description?: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   episodeNumber: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   duration?: number;
@@ -72,11 +75,35 @@ class CreateEpisodeDto {
  * Update Episode DTO (for request body)
  */
 class UpdateEpisodeDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
   title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
   description?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   episodeNumber?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
   duration?: number;
+
+  @IsOptional()
+  @IsEnum(ContentStatus)
   status?: ContentStatus;
+
+  @IsOptional()
+  @IsUUID()
   metadataId?: string;
 }
 

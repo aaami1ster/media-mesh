@@ -20,7 +20,7 @@ describe('EpisodesController (integration)', () => {
   let kafkaService: jest.Mocked<KafkaService>;
 
   const mockProgram: Program = {
-    id: 'program-1',
+    id: '550e8400-e29b-41d4-a716-446655440001',
     title: 'Test Program',
     description: 'Test Description',
     status: ContentStatus.DRAFT,
@@ -32,8 +32,8 @@ describe('EpisodesController (integration)', () => {
   };
 
   const mockEpisode: Episode = {
-    id: 'episode-1',
-    programId: 'program-1',
+    id: '550e8400-e29b-41d4-a716-446655440002',
+    programId: '550e8400-e29b-41d4-a716-446655440001',
     title: 'Test Episode',
     description: 'Test Description',
     episodeNumber: 1,
@@ -133,7 +133,7 @@ describe('EpisodesController (integration)', () => {
       episodeRepository.findByProgramId.mockResolvedValue(episodes);
 
       const response = await request(app.getHttpServer())
-        .get('/programs/program-1/episodes')
+        .get('/programs/550e8400-e29b-41d4-a716-446655440001/episodes')
         .expect(200);
 
       expect(response.body).toHaveLength(1);
@@ -150,11 +150,11 @@ describe('EpisodesController (integration)', () => {
       episodeRepository.findByProgramId.mockResolvedValue(episodes);
 
       await request(app.getHttpServer())
-        .get('/programs/program-1/episodes')
+        .get('/programs/550e8400-e29b-41d4-a716-446655440001/episodes')
         .query({ skip: '10', take: '20' })
         .expect(200);
 
-      expect(episodeRepository.findByProgramId).toHaveBeenCalledWith('program-1', 10, 20);
+      expect(episodeRepository.findByProgramId).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440001', 10, 20);
     });
 
     it('should return 404 if program not found', async () => {
@@ -198,7 +198,7 @@ describe('EpisodesController (integration)', () => {
       episodeRepository.findById.mockResolvedValue(mockEpisode);
 
       const response = await request(app.getHttpServer())
-        .get('/episodes/episode-1')
+        .get('/episodes/550e8400-e29b-41d4-a716-446655440002')
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -217,7 +217,7 @@ describe('EpisodesController (integration)', () => {
   describe('POST /episodes', () => {
     it('should create a new episode', async () => {
       const createDto = {
-        programId: 'program-1',
+        programId: '550e8400-e29b-41d4-a716-446655440001',
         title: 'New Episode',
         description: 'Episode description',
         episodeNumber: 1,
@@ -227,7 +227,8 @@ describe('EpisodesController (integration)', () => {
 
       programRepository.findById.mockResolvedValue(mockProgram);
       episodeRepository.findByProgramId.mockResolvedValue([]);
-      episodeRepository.create.mockResolvedValue(mockEpisode);
+      const createdEpisode = { ...mockEpisode, ...createDto, toDto: jest.fn() };
+      episodeRepository.create.mockResolvedValue(createdEpisode);
 
       const response = await request(app.getHttpServer())
         .post('/episodes')
@@ -249,7 +250,7 @@ describe('EpisodesController (integration)', () => {
       await request(app.getHttpServer())
         .post('/episodes')
         .send({
-          programId: 'non-existent',
+          programId: '550e8400-e29b-41d4-a716-446655449999',
           title: 'Episode',
           description: 'Episode description',
           episodeNumber: 1,
@@ -267,7 +268,7 @@ describe('EpisodesController (integration)', () => {
       await request(app.getHttpServer())
         .post('/episodes')
         .send({
-          programId: 'program-1',
+          programId: '550e8400-e29b-41d4-a716-446655440001',
           title: 'Episode',
           description: 'Episode description',
           episodeNumber: 1,
@@ -290,7 +291,7 @@ describe('EpisodesController (integration)', () => {
       programRepository.findById.mockResolvedValue(mockProgram);
 
       const response = await request(app.getHttpServer())
-        .put('/episodes/episode-1')
+        .put('/episodes/550e8400-e29b-41d4-a716-446655440002')
         .send(updateDto)
         .expect(200);
 
@@ -315,9 +316,9 @@ describe('EpisodesController (integration)', () => {
       episodeRepository.findById.mockResolvedValue(mockEpisode);
       episodeRepository.delete.mockResolvedValue(undefined);
 
-      await request(app.getHttpServer()).delete('/episodes/episode-1').expect(204);
+      await request(app.getHttpServer()).delete('/episodes/550e8400-e29b-41d4-a716-446655440002').expect(204);
 
-      expect(episodeRepository.delete).toHaveBeenCalledWith('episode-1');
+      expect(episodeRepository.delete).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440002');
     });
 
     it('should return 404 if episode not found', async () => {
