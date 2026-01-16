@@ -1,0 +1,52 @@
+// Prisma Schema for CMS Service
+// Database: cms_db
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Program {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      String    @default("DRAFT") // DRAFT, PUBLISHED
+  metadataId  String?   // Optional FK to metadata service
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  // Relations
+  episodes    Episode[]
+
+  @@map("programs")
+  @@index([status])
+  @@index([createdAt])
+  @@index([metadataId])
+}
+
+model Episode {
+  id            String    @id @default(uuid())
+  programId     String
+  title         String
+  description   String?
+  episodeNumber Int
+  duration      Int?      // in seconds
+  status        String    @default("DRAFT") // DRAFT, PUBLISHED
+  metadataId    String?   // Optional FK to metadata service
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  program       Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@map("episodes")
+  @@index([programId])
+  @@index([status])
+  @@index([episodeNumber])
+  @@index([metadataId])
+}
