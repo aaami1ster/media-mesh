@@ -8,6 +8,7 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,10 +18,17 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { JwtAuthGuard, RolesGuard, Roles, Public } from '@mediamesh/shared';
+import {
+  JwtAuthGuard,
+  RolesGuard,
+  Roles,
+  Public,
+  TimeoutInterceptor,
+} from '@mediamesh/shared';
 import { UserRole } from '@mediamesh/shared';
 import { ProxyService } from '../proxy.service';
 import { Request } from 'express';
+import { RESILIENCE_CONFIG } from '../../config/env.constants';
 
 /**
  * Metadata Controller
@@ -31,6 +39,12 @@ import { Request } from 'express';
 @ApiTags('Metadata')
 @Controller({ path: 'metadata', version: '1' })
 @UseGuards(JwtAuthGuard, RolesGuard)
+@UseInterceptors(
+  new TimeoutInterceptor({
+    timeout: RESILIENCE_CONFIG.REQUEST_TIMEOUT,
+    timeoutMessage: 'Request to Metadata service timed out',
+  }),
+)
 @ApiBearerAuth('JWT-auth')
 export class MetadataController {
   constructor(private readonly proxyService: ProxyService) {}

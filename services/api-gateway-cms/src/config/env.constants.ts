@@ -43,3 +43,22 @@ export const JWT_CONFIG = {
   SECRET: process.env.JWT_SECRET || 'your-secret-key',
   EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1h',
 };
+
+// Resilience configuration
+export const RESILIENCE_CONFIG = {
+  // Retry configuration
+  RETRY_MAX_ATTEMPTS: parseInt(process.env.RETRY_MAX_ATTEMPTS || '3', 10),
+  RETRY_INITIAL_DELAY: parseInt(process.env.RETRY_INITIAL_DELAY || '1000', 10), // ms
+  RETRY_MAX_DELAY: parseInt(process.env.RETRY_MAX_DELAY || '10000', 10), // ms
+  RETRY_MULTIPLIER: parseFloat(process.env.RETRY_MULTIPLIER || '2'),
+  
+  // Circuit breaker configuration
+  CIRCUIT_BREAKER_FAILURE_THRESHOLD: parseInt(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD || '5', 10),
+  CIRCUIT_BREAKER_SUCCESS_THRESHOLD: parseInt(process.env.CIRCUIT_BREAKER_SUCCESS_THRESHOLD || '2', 10),
+  CIRCUIT_BREAKER_TIMEOUT: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT || '60000', 10), // ms
+  CIRCUIT_BREAKER_RESET_TIMEOUT: parseInt(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT || '300000', 10), // ms
+  CIRCUIT_BREAKER_MONITORING_PERIOD: parseInt(process.env.CIRCUIT_BREAKER_MONITORING_PERIOD || '60000', 10), // ms
+  
+  // Timeout configuration
+  REQUEST_TIMEOUT: parseInt(process.env.REQUEST_TIMEOUT || '30000', 10), // ms
+};

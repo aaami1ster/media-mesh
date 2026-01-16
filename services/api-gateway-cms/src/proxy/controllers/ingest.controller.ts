@@ -8,6 +8,7 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,10 +18,16 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { JwtAuthGuard, RolesGuard, Roles } from '@mediamesh/shared';
+import {
+  JwtAuthGuard,
+  RolesGuard,
+  Roles,
+  TimeoutInterceptor,
+} from '@mediamesh/shared';
 import { UserRole } from '@mediamesh/shared';
 import { ProxyService } from '../proxy.service';
 import { Request } from 'express';
+import { RESILIENCE_CONFIG } from '../../config/env.constants';
 
 /**
  * Ingest Controller
@@ -31,6 +38,12 @@ import { Request } from 'express';
 @ApiTags('Ingest')
 @Controller({ path: 'ingest', version: '1' })
 @UseGuards(JwtAuthGuard, RolesGuard)
+@UseInterceptors(
+  new TimeoutInterceptor({
+    timeout: RESILIENCE_CONFIG.REQUEST_TIMEOUT * 2, // Longer timeout for ingest operations
+    timeoutMessage: 'Request to Ingest service timed out',
+  }),
+)
 @ApiBearerAuth('JWT-auth')
 export class IngestController {
   constructor(private readonly proxyService: ProxyService) {}

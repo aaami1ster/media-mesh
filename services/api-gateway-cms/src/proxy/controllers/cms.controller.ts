@@ -20,20 +20,39 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { JwtAuthGuard, RolesGuard, Roles, Public, CurrentUser } from '@mediamesh/shared';
+import {
+  JwtAuthGuard,
+  RolesGuard,
+  Roles,
+  Public,
+  CurrentUser,
+  TimeoutInterceptor,
+} from '@mediamesh/shared';
 import { UserRole } from '@mediamesh/shared';
 import { ProxyService } from '../proxy.service';
 import { Request } from 'express';
+import { RESILIENCE_CONFIG } from '../../config/env.constants';
 
 /**
  * CMS Controller
  * 
  * Routes requests to CMS Service.
  * Base path: /api/v1/cms
+ * 
+ * Resilience patterns applied:
+ * - Timeout: Prevents hanging requests
+ * - Circuit Breaker: Protects against cascading failures
+ * - Retry: Exponential backoff for transient failures
  */
 @ApiTags('CMS')
 @Controller({ path: 'cms', version: '1' })
 @UseGuards(JwtAuthGuard, RolesGuard)
+@UseInterceptors(
+  new TimeoutInterceptor({
+    timeout: RESILIENCE_CONFIG.REQUEST_TIMEOUT,
+    timeoutMessage: 'Request to CMS service timed out',
+  }),
+)
 @ApiBearerAuth('JWT-auth')
 export class CmsController {
   constructor(private readonly proxyService: ProxyService) {}
