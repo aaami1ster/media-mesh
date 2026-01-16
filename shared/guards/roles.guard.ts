@@ -11,7 +11,7 @@ import { ROLES_KEY } from '../decorators';
 import { UserRole } from '../dto';
 import { RequestUser } from '../decorators/current-user.decorator';
 import { hasRolePermission, UserRoles } from '../constants';
-import '../types/fastify';
+// Type augmentation from ../types/fastify.d.ts is automatically included via tsconfig.json
 
 /**
  * Roles Guard - Enforces Role-Based Access Control (RBAC)

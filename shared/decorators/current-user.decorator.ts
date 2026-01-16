@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 import { UserDto } from '../dto';
-import '../types/fastify.d';
+// Type augmentation from ../types/fastify.d.ts is automatically included via tsconfig.json
 
 /**
  * Interface for user in request
