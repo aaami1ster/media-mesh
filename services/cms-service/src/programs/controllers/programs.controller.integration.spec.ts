@@ -150,7 +150,7 @@ describe('ProgramsController (integration)', () => {
         contentType: 'PROGRAM',
       };
 
-      const createdProgram = { ...mockProgram, ...createDto };
+      const createdProgram = { ...mockProgram, toDto: jest.fn(), ...createDto };
       programRepository.create.mockResolvedValue(createdProgram);
 
       const response = await request(app.getHttpServer())
@@ -181,7 +181,7 @@ describe('ProgramsController (integration)', () => {
       };
 
       programRepository.findById.mockResolvedValue(mockProgram);
-      programRepository.update.mockResolvedValue({ ...mockProgram, ...updateDto });
+      programRepository.update.mockResolvedValue({ ...mockProgram, toDto: jest.fn(), ...updateDto });
 
       const response = await request(app.getHttpServer())
         .put('/programs/program-1')
@@ -223,12 +223,13 @@ describe('ProgramsController (integration)', () => {
 
   describe('POST /programs/:id/publish', () => {
     it('should publish a program', async () => {
-      const draftProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const draftProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
       const publishedAt = new Date();
       const publishedProgram = {
         ...draftProgram,
         status: ContentStatus.PUBLISHED,
         publishedAt,
+        toDto: jest.fn(),
       };
 
       programRepository.findById.mockResolvedValue(draftProgram);
@@ -247,6 +248,7 @@ describe('ProgramsController (integration)', () => {
         ...mockProgram,
         status: ContentStatus.PUBLISHED,
         publishedAt: new Date(),
+        toDto: jest.fn(),
       };
 
       programRepository.findById.mockResolvedValue(publishedProgram);
@@ -264,10 +266,12 @@ describe('ProgramsController (integration)', () => {
         ...mockProgram,
         status: ContentStatus.PUBLISHED,
         publishedAt,
+        toDto: jest.fn(),
       };
       const unpublishedProgram = {
         ...publishedProgram,
         status: ContentStatus.DRAFT,
+        toDto: jest.fn(),
       };
 
       programRepository.findById.mockResolvedValue(publishedProgram);
@@ -281,7 +285,7 @@ describe('ProgramsController (integration)', () => {
     });
 
     it('should return 409 if program already in draft', async () => {
-      const draftProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const draftProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
 
       programRepository.findById.mockResolvedValue(draftProgram);
 

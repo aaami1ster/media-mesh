@@ -71,7 +71,7 @@ describe('ProgramService', () => {
         description: 'New Description',
       };
 
-      const createdProgram = { ...mockProgram, ...createData };
+      const createdProgram = { ...mockProgram, toDto: jest.fn(), ...createData };
       repository.create.mockResolvedValue(createdProgram);
 
       const result = await service.create(createData);
@@ -106,6 +106,7 @@ describe('ProgramService', () => {
         ...mockProgram,
         ...createData,
         publishedAt,
+        toDto: jest.fn(),
       };
       repository.create.mockResolvedValue(createdProgram);
 
@@ -128,7 +129,7 @@ describe('ProgramService', () => {
         metadataId: 'metadata-1',
       };
 
-      const createdProgram = { ...mockProgram, ...createData };
+      const createdProgram = { ...mockProgram, toDto: jest.fn(), ...createData };
       repository.create.mockResolvedValue(createdProgram);
 
       const result = await service.create(createData);
@@ -198,13 +199,13 @@ describe('ProgramService', () => {
 
   describe('update', () => {
     it('should update a program', async () => {
-      const existingProgram = { ...mockProgram };
+      const existingProgram = { ...mockProgram, toDto: jest.fn() };
       const updateData = {
         title: 'Updated Title',
         description: 'Updated Description',
       };
 
-      const updatedProgram = { ...existingProgram, ...updateData, updatedAt: new Date() };
+      const updatedProgram = { ...existingProgram, ...updateData, updatedAt: new Date() , toDto: jest.fn() };
       repository.findById.mockResolvedValue(existingProgram);
       repository.update.mockResolvedValue(updatedProgram);
 
@@ -216,10 +217,10 @@ describe('ProgramService', () => {
     });
 
     it('should track changes and emit updated event', async () => {
-      const existingProgram = { ...mockProgram, title: 'Old Title' };
+      const existingProgram = { ...mockProgram, toDto: jest.fn(), title: 'Old Title' };
       const updateData = { title: 'New Title' };
 
-      const updatedProgram = { ...existingProgram, ...updateData };
+      const updatedProgram = { ...existingProgram, ...updateData , toDto: jest.fn() };
       repository.findById.mockResolvedValue(existingProgram);
       repository.update.mockResolvedValue(updatedProgram);
 
@@ -238,11 +239,11 @@ describe('ProgramService', () => {
     });
 
     it('should validate status transition', async () => {
-      const existingProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const existingProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
       const updateData = { status: ContentStatus.PUBLISHED };
 
       repository.findById.mockResolvedValue(existingProgram);
-      repository.update.mockResolvedValue({ ...existingProgram, ...updateData });
+      repository.update.mockResolvedValue({ ...existingProgram, ...updateData , toDto: jest.fn() });
 
       const result = await service.update('program-1', updateData);
 
@@ -251,7 +252,7 @@ describe('ProgramService', () => {
     });
 
     it('should throw BadRequestException for invalid status transition', async () => {
-      const existingProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const existingProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
       const updateData = { status: 'INVALID_STATUS' as any };
 
       repository.findById.mockResolvedValue(existingProgram);
@@ -260,7 +261,7 @@ describe('ProgramService', () => {
     });
 
     it('should set publishedAt when publishing via update', async () => {
-      const existingProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const existingProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
       const updateData = { status: ContentStatus.PUBLISHED };
       const publishedAt = new Date();
 
@@ -303,12 +304,13 @@ describe('ProgramService', () => {
 
   describe('publish', () => {
     it('should publish a DRAFT program', async () => {
-      const draftProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const draftProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
       const publishedAt = new Date();
       const publishedProgram = {
         ...draftProgram,
         status: ContentStatus.PUBLISHED,
         publishedAt,
+        toDto: jest.fn(),
       };
 
       repository.findById.mockResolvedValue(draftProgram);
@@ -337,6 +339,7 @@ describe('ProgramService', () => {
         ...mockProgram,
         status: ContentStatus.PUBLISHED,
         publishedAt: new Date(),
+        toDto: jest.fn(),
       };
 
       repository.findById.mockResolvedValue(publishedProgram);
@@ -349,6 +352,7 @@ describe('ProgramService', () => {
       const archivedProgram = {
         ...mockProgram,
         status: 'ARCHIVED' as any,
+        toDto: jest.fn(),
       };
 
       repository.findById.mockResolvedValue(archivedProgram);
@@ -364,11 +368,13 @@ describe('ProgramService', () => {
         ...mockProgram,
         status: ContentStatus.PUBLISHED,
         publishedAt,
+        toDto: jest.fn(),
       };
       const unpublishedProgram = {
         ...publishedProgram,
         status: ContentStatus.DRAFT,
         // publishedAt should be preserved
+        toDto: jest.fn(),
       };
 
       repository.findById.mockResolvedValue(publishedProgram);
@@ -384,7 +390,7 @@ describe('ProgramService', () => {
     });
 
     it('should throw ConflictException if program already in DRAFT', async () => {
-      const draftProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const draftProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
 
       repository.findById.mockResolvedValue(draftProgram);
 
@@ -393,7 +399,7 @@ describe('ProgramService', () => {
     });
 
     it('should throw BadRequestException if program not in PUBLISHED status', async () => {
-      const draftProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const draftProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
 
       repository.findById.mockResolvedValue(draftProgram);
 

@@ -237,7 +237,7 @@ describe('EpisodesController (integration)', () => {
     });
 
     it('should return 409 if episode number already exists', async () => {
-      const existingEpisode = { ...mockEpisode, episodeNumber: 1, toDto: jest.fn() };
+      const existingEpisode = { ...mockEpisode, toDto: jest.fn(), episodeNumber: 1, toDto: jest.fn() };
       programRepository.findById.mockResolvedValue(mockProgram);
       episodeRepository.findByProgramId.mockResolvedValue([existingEpisode]);
 
@@ -260,7 +260,7 @@ describe('EpisodesController (integration)', () => {
 
       episodeRepository.findById.mockResolvedValue(mockEpisode);
       episodeRepository.findByProgramId.mockResolvedValue([]);
-      episodeRepository.update.mockResolvedValue({ ...mockEpisode, ...updateDto, toDto: jest.fn() });
+      episodeRepository.update.mockResolvedValue({ ...mockEpisode, toDto: jest.fn(), ...updateDto, toDto: jest.fn() });
       programRepository.findById.mockResolvedValue(mockProgram);
 
       const response = await request(app.getHttpServer())

@@ -17,11 +17,17 @@ module.exports = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@mediamesh/shared$': '<rootDir>/../../shared',
-    '^@mediamesh/shared/(.*)$': '<rootDir>/../../shared/$1',
-    '^@shared/(.*)$': '<rootDir>/../../shared/$1',
+    '^@mediamesh/shared$': '<rootDir>/../../../shared',
+    '^@mediamesh/shared/(.*)$': '<rootDir>/../../../shared/$1',
+    '^@shared/(.*)$': '<rootDir>/../../../shared/$1',
   },
-  moduleDirectories: ['node_modules', '<rootDir>/../node_modules', '<rootDir>/../../node_modules'],
+  moduleDirectories: [
+    'node_modules',
+    '<rootDir>/../node_modules',
+    '<rootDir>/../../node_modules',
+    '<rootDir>/../../../node_modules',
+    '<rootDir>/../../../shared/node_modules',
+  ],
   setupFilesAfterEnv: [],
   testTimeout: 10000,
 };

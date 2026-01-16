@@ -124,12 +124,13 @@ describe('ProgramService - Relationships', () => {
 
   describe('Publishing Workflow with Episodes', () => {
     it('should publish program independently of episodes', async () => {
-      const draftProgram = { ...mockProgram, status: ContentStatus.DRAFT };
+      const draftProgram = { ...mockProgram, toDto: jest.fn(), status: ContentStatus.DRAFT };
       const publishedAt = new Date();
       const publishedProgram = {
         ...draftProgram,
         status: ContentStatus.PUBLISHED,
         publishedAt,
+        toDto: jest.fn(),
       };
 
       programRepository.findById.mockResolvedValue(draftProgram);
