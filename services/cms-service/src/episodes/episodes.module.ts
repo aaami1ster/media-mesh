@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { EpisodeRepository } from './repositories/episode.repository';
 import { EpisodeService } from './services/episode.service';
+import { EpisodesController } from './controllers/episodes.controller';
 import { ProgramsModule } from '../programs/programs.module';
 
 /**
@@ -10,6 +11,7 @@ import { ProgramsModule } from '../programs/programs.module';
  */
 @Module({
   imports: [ProgramsModule],
+  controllers: [EpisodesController],
   providers: [EpisodeRepository, EpisodeService],
   exports: [EpisodeRepository, EpisodeService],
 })
