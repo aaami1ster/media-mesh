@@ -1,0 +1,43 @@
+// Prisma Schema for Media Service
+// Database: media_db
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StorageType {
+  S3
+  SPACES
+  MINIO
+}
+
+enum ContentType {
+  PROGRAM
+  EPISODE
+  MOVIE
+  SERIES
+}
+
+model Media {
+  id           String      @id @default(uuid())
+  contentId    String      // FK to content (program/episode)
+  contentType  ContentType
+  url          String      // CDN URL
+  thumbnailUrl String?
+  storageType  StorageType
+  storageKey   String      // Key in object storage
+  fileSize     BigInt      // File size in bytes
+  mimeType     String
+  createdAt    DateTime    @default(now())
+
+  @@map("media")
+  @@index([contentId])
+  @@index([contentType])
+  @@index([storageType])
+  @@index([createdAt])
+}

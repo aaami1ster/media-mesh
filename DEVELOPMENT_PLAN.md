@@ -530,11 +530,11 @@ Write tests for metadata-service:
 ```
 
 **Validation**:
-- [ ] Metadata service starts and connects to database
+- [x] Metadata service starts and connects to database
 - [ ] Can create and retrieve metadata
 - [ ] Validation works correctly
 - [ ] Versioning works
-- [ ] Tests pass
+- [x] Tests pass
 
 ---
 
@@ -564,7 +564,7 @@ Create media-service in services/media-service/:
 Create Media entity:
 - Fields: id, contentId, contentType (PROGRAM/EPISODE), url (CDN URL), thumbnailUrl, storageType, storageKey, fileSize, mimeType, createdAt
 - Database migration
-- Object storage client configuration (S3/Spaces/MinIO)
+- Object storage client configuration (S3)
 - Support for multiple storage backends
 ```
 
@@ -618,11 +618,11 @@ Write tests for media-service:
 ```
 
 **Validation**:
-- [ ] Media service starts and connects to database
+- [x] Media service starts and connects to database
 - [ ] Can upload files to object storage
 - [ ] CDN URLs are generated correctly
 - [ ] Thumbnails can be created
-- [ ] Tests pass
+- [x] Tests pass
 
 ---
 
