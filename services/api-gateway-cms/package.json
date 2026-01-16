@@ -1,7 +1,7 @@
 {
   "name": "@mediamesh/api-gateway-cms",
   "version": "0.0.1",
-  "description": "api-gateway-cms - MediaMesh Microservice",
+  "description": "api-gateway-cms - MediaMesh API Gateway",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -17,19 +17,33 @@
     "test:cov": "jest --coverage"
   },
   "dependencies": {
+    "@mediamesh/shared": "*",
+    "@nestjs/axios": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/microservices": "^11.0.1",
     "@nestjs/platform-fastify": "^11.0.1",
+    "@nestjs/swagger": "^7.4.2",
+    "@nestjs/throttler": "^5.1.1",
+    "@nestjs-redis/client": "^0.11.2",
+    "@nestjs-redis/throttler-storage": "^0.11.2",
+    "axios": "^1.7.9",
+    "cache-manager": "^5.7.6",
+    "cache-manager-redis-yet": "^5.1.1",
+    "ioredis": "^5.4.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
+    "@nestjs/jwt": "^10.2.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
+    "@types/supertest": "^6.0.0",
     "jest": "^30.2.0",
+    "supertest": "^7.0.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
