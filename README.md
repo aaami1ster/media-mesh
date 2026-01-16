@@ -485,12 +485,96 @@ root
 
 ## 🚢 Deployment
 
-### Local Development (Docker Compose)
+MediaMesh supports multiple deployment methods. See the [Deployment Guide](./DEPLOYMENT.md) for comprehensive instructions.
+
+### Quick Start
+
+#### Docker Compose (Recommended)
+
+**Development:**
+```bash
+# Copy environment file
+cp .env.development .env
+
+# Start all services
+docker compose -f compose.dev.yml up -d
+
+# Check status
+docker compose -f compose.dev.yml ps
+```
+
+**Production:**
+```bash
+# Copy and configure environment
+cp .env.production .env
+# Edit .env with production values
+
+# Build and start
+docker compose -f compose.prod.yml build
+docker compose -f compose.prod.yml up -d
+```
+
+#### PM2 (Local Development)
 
 ```bash
-docker compose build
-docker compose up -d
+# Start infrastructure
+docker compose up -d postgres redis broker
+
+# Build services
+npm run build
+
+# Load environment
+export $(cat .env.development | xargs)
+
+# Start services
+pm2 start ecosystem.config.js
+pm2 status
 ```
+
+### Deployment Methods
+
+1. **Docker Compose** - Containerized deployment
+   - See [Docker Compose Guide](./COMPOSE_GUIDE.md)
+   - Development: `compose.dev.yml` (single image)
+   - Production: `compose.prod.yml` (individual images)
+
+2. **PM2** - Process management
+   - See [PM2 Usage Guide](./PM2_USAGE.md)
+   - Local development
+   - Process orchestration
+
+3. **Kubernetes** - Container orchestration
+   - See [Deployment Guide](./DEPLOYMENT.md)
+   - Production deployments
+   - Auto-scaling support
+
+### Documentation
+
+- **[Deployment Guide](./DEPLOYMENT.md)** - Complete deployment instructions
+- **[Docker Compose Guide](./COMPOSE_GUIDE.md)** - Docker Compose configuration
+- **[PM2 Usage Guide](./PM2_USAGE.md)** - PM2 process management
+- **[Environment Configuration](./ENV_CONFIGURATION.md)** - Environment variables reference
+- **[Health Checks](./HEALTH_CHECKS.md)** - Health check endpoints
+- **[Troubleshooting](./TROUBLESHOOTING.md)** - Common issues and solutions
+
+### Service Endpoints
+
+After deployment, services are available at:
+
+- **Discovery Gateway**: http://localhost:8080
+- **CMS Gateway**: http://localhost:8081
+- **Swagger Docs**: http://localhost:8080/api/docs
+- **GraphQL Playground**: http://localhost:8080/graphql
+- **Kafka UI**: http://localhost:8090
+
+### Health Checks
+
+All services expose `/health` endpoints:
+- Discovery Gateway: `http://localhost:8080/health`
+- CMS Gateway: `http://localhost:8081/health`
+- Services: `http://localhost:PORT/health`
+
+See [Health Checks Guide](./HEALTH_CHECKS.md) for details.
 
 ### AWS Production Deployment
 

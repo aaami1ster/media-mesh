@@ -26,40 +26,56 @@ This file defines all 9 microservices with their:
    - Instances: 2 (cluster mode)
    - Public API gateway
    - High traffic handling
+   - GraphQL support
+   - Rate limiting (IP and user-based)
 
 2. **cms-gateway** (Port 8081)
    - Instances: 1 (cluster mode, can scale)
    - Internal CMS API gateway
+   - JWT authentication
+   - Role-based rate limiting
 
 ### Core Services
 
-3. **auth-service** (Port 8086)
+3. **auth-service** (Port 8001)
    - Authentication and authorization
    - JWT token management
+   - User management
+   - Bcrypt password hashing
 
-4. **cms-service** (Port 8082)
+4. **cms-service** (Port 8002)
    - Content management operations
+   - Programs and episodes CRUD
    - Kafka event publishing
 
-5. **metadata-service** (Port 8083)
+5. **metadata-service** (Port 8003)
    - Metadata management
+   - Content categorization
+   - Version history
 
-6. **media-service** (Port 8084)
+6. **media-service** (Port 8004)
    - Media file handling
    - S3/MinIO integration
+   - Thumbnail generation
+   - Image processing
 
-7. **ingest-service** (Port 8085)
+7. **ingest-service** (Port 8005)
    - Content ingestion
+   - YouTube, RSS, API sources
    - Kafka event publishing
+   - Batch processing
 
 8. **discovery-service** (Port 8092)
    - Instances: 2 (cluster mode)
    - High-read traffic service
    - Redis caching
+   - Trending and popular content
 
 9. **search-service** (Port 8091)
    - Search and indexing
    - Kafka event consumption
+   - Full-text search
+   - Reindexing capabilities
 
 ---
 
@@ -206,12 +222,25 @@ PM2 will restart services if they exceed these limits.
 
 ## 🌍 Environment Variables
 
+The `ecosystem.config.js` file includes comprehensive environment variable configuration for all services.
+
 ### Development Mode
 
 Uses `localhost` for all connections:
 - Database: `localhost:5432`
 - Redis: `localhost:6379`
 - Kafka: `localhost:9092`
+- Service URLs: `http://localhost:PORT`
+
+**All services configured with:**
+- Database connection strings
+- Redis configuration
+- Kafka broker and client IDs
+- JWT secrets (development-safe)
+- Service URLs for inter-service communication
+- Rate limiting configuration
+- Resilience patterns (retry, circuit breaker)
+- Service-specific configurations
 
 ### Production Mode
 
@@ -219,17 +248,49 @@ Uses service names (for Docker Compose):
 - Database: `postgres:5432`
 - Redis: `redis:6379`
 - Kafka: `broker:29092`
+- Service URLs: `http://service-name:PORT`
+
+### Environment Variables Included
+
+Each service in `ecosystem.config.js` includes:
+
+**Common Variables:**
+- `NODE_ENV` - Environment mode
+- `PORT` - Service port
+- `DATABASE_URL` - PostgreSQL connection string
+- `REDIS_HOST`, `REDIS_PORT` - Redis configuration
+- `KAFKA_BROKER` - Kafka broker address
+
+**Service-Specific Variables:**
+- **Auth Service**: JWT secrets, bcrypt config, admin user
+- **CMS Service**: Kafka topics for content events
+- **Media Service**: Object storage (S3/MinIO) configuration
+- **Ingest Service**: YouTube API, retry configuration
+- **Discovery Service**: Redis cache TTL settings
+- **Search Service**: Search limits, Kafka topics
+- **Gateways**: Rate limiting, service URLs, resilience config
 
 ### Override Environment Variables
 
-Create a `.env` file or export variables:
+**Option 1: Load from .env file**
+```bash
+# Load .env.development
+export $(cat .env.development | xargs)
+pm2 start ecosystem.config.js
+```
 
+**Option 2: Export variables**
 ```bash
 export JWT_SECRET="your-secret-key"
 export DB_PASSWORD="your-password"
 export REDIS_PASSWORD="your-redis-password"
-
 pm2 start ecosystem.config.js --env production
+```
+
+**Option 3: Use dotenv-cli**
+```bash
+npm install -g dotenv-cli
+dotenv -e .env.development -- pm2 start ecosystem.config.js
 ```
 
 ---

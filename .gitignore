@@ -45,6 +45,10 @@ coverage/
 .env.test.local
 .env.production.local
 .env.local
+# Allow example and template files
+!.env.example
+!.env.development
+!.env.production
 
 # temp directory
 .temp
@@ -68,6 +72,7 @@ src/core/flyway/flyway.development.toml
 
 # Local development scripts
 local/
+# PM2 ecosystem config (may contain secrets)
 ecosystem.config.js
 !ecosystem.config.example.js
 
