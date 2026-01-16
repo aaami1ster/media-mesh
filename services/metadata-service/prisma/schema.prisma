@@ -1,0 +1,81 @@
+// Prisma Schema for Metadata Service
+// Database: metadata_db
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MetadataCategory {
+  MOVIE
+  TV_SHOW
+  DOCUMENTARY
+  SPORTS
+  NEWS
+  ENTERTAINMENT
+  EDUCATIONAL
+  MUSIC
+  PODCAST
+  OTHER
+}
+
+enum ContentType {
+  PROGRAM
+  EPISODE
+  MOVIE
+  SERIES
+}
+
+model Metadata {
+  id          String            @id @default(uuid())
+  title       String
+  description String?
+  category    MetadataCategory?
+  language    String?
+  duration    Int?              // in seconds
+  publishDate DateTime?
+  contentId   String            // FK to content (program/episode)
+  contentType ContentType
+  version     Int               @default(1)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Version history relation
+  previousVersions MetadataVersion[]
+
+  @@map("metadata")
+  @@index([contentId])
+  @@index([contentType])
+  @@index([category])
+  @@index([language])
+  @@index([createdAt])
+  @@unique([contentId, version])
+}
+
+model MetadataVersion {
+  id          String            @id @default(uuid())
+  metadataId  String
+  title       String
+  description String?
+  category    MetadataCategory?
+  language    String?
+  duration    Int?
+  publishDate DateTime?
+  contentId   String
+  contentType ContentType
+  version     Int
+  createdAt   DateTime          @default(now())
+
+  // Relation to current metadata
+  metadata    Metadata          @relation(fields: [metadataId], references: [id], onDelete: Cascade)
+
+  @@map("metadata_versions")
+  @@index([metadataId])
+  @@index([contentId])
+  @@index([version])
+  @@index([createdAt])
+}
