@@ -42,6 +42,8 @@ import { ThrottlerIPGuard } from './throttler/throttler-ip.guard';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), GRAPHQL_CONFIG.AUTO_SCHEMA_FILE),
       playground: GRAPHQL_CONFIG.PLAYGROUND,
+      // autoSchemaFile: join(process.cwd(), 'schema.gql'),
+      // playground: false, // Apollo v4 uses Explorer by default
       introspection: GRAPHQL_CONFIG.INTROSPECTION,
       context: ({ request }) => ({ req: request }),
       formatError: (error) => {
