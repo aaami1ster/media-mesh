@@ -455,7 +455,7 @@ Write tests for cms-service:
 ```
 
 **Validation**:
-- [ ] CMS service starts and connects to database
+- [x] CMS service starts and connects to database
 - [ ] Can create/read/update/delete programs
 - [ ] Can create/read/update/delete episodes
 - [ ] Publishing workflow works
