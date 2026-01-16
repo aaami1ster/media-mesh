@@ -27,10 +27,25 @@ WORKDIR /app
 # Install curl and wget for health checks
 RUN apk add --no-cache curl wget
 
-# Copy package files
+# Copy package files and workspace structure for npm to resolve dependencies
 COPY package*.json ./
+COPY tsconfig*.json ./
 
-# Install production dependencies only
+# Copy shared module package.json
+COPY shared/package.json ./shared/package.json
+
+# Copy all service package.json files (needed for npm workspaces to resolve dependencies)
+COPY services/api-gateway-discovery/package.json ./services/api-gateway-discovery/package.json
+COPY services/api-gateway-cms/package.json ./services/api-gateway-cms/package.json
+COPY services/auth-service/package.json ./services/auth-service/package.json
+COPY services/cms-service/package.json ./services/cms-service/package.json
+COPY services/metadata-service/package.json ./services/metadata-service/package.json
+COPY services/media-service/package.json ./services/media-service/package.json
+COPY services/ingest-service/package.json ./services/ingest-service/package.json
+COPY services/discovery-service/package.json ./services/discovery-service/package.json
+COPY services/search-service/package.json ./services/search-service/package.json
+
+# Install production dependencies (npm workspaces will resolve all workspace dependencies)
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built applications (dist only) from builder stage

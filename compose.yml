@@ -127,9 +127,6 @@ services:
 
   # Auth Service
   auth-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/auth-service/dist/main.js
     container_name: mediamesh-auth-service
@@ -188,9 +185,6 @@ services:
 
   # CMS Service
   cms-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/cms-service/dist/main.js
     container_name: mediamesh-cms-service
@@ -248,9 +242,6 @@ services:
 
   # Metadata Service
   metadata-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/metadata-service/dist/main.js
     container_name: mediamesh-metadata-service
@@ -299,9 +290,6 @@ services:
 
   # Media Service
   media-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/media-service/dist/main.js
     container_name: mediamesh-media-service
@@ -357,9 +345,6 @@ services:
 
   # Ingest Service
   ingest-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/ingest-service/dist/main.js
     container_name: mediamesh-ingest-service
@@ -416,9 +401,6 @@ services:
 
   # Discovery Service
   discovery-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/discovery-service/dist/main.js
     container_name: mediamesh-discovery-service
@@ -470,9 +452,6 @@ services:
 
   # Search Service
   search-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/search-service/dist/main.js
     container_name: mediamesh-search-service
@@ -523,9 +502,6 @@ services:
 
   # Discovery Gateway
   discovery-gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/api-gateway-discovery/dist/main.js
     container_name: mediamesh-discovery-gateway
@@ -587,9 +563,6 @@ services:
 
   # CMS Gateway
   cms-gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: mediamesh:latest
     command: node services/api-gateway-cms/dist/main.js
     container_name: mediamesh-cms-gateway
