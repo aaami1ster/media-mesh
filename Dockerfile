@@ -36,7 +36,7 @@ RUN npm run prisma:generate
 WORKDIR /app
 
 # Build all services
-RUN npm run build
+RUN npm run build:all
 
 # Production stage
 FROM node:20-alpine AS production
