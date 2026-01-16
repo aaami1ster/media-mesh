@@ -10,6 +10,7 @@ import { KafkaModule } from './kafka/kafka.module';
 @Module({
   imports: [
     CacheModule.registerAsync({
+      isGlobal: true,
       useFactory: async () => {
         const store = await redisStore({
           socket: {

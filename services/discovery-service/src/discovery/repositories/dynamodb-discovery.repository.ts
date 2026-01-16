@@ -49,8 +49,12 @@ export class DynamoDBDiscoveryRepository implements OnModuleInit {
 
       this.logger.log('DynamoDB tables initialized');
     } catch (error) {
-      this.logger.error('Failed to initialize DynamoDB tables:', error);
-      throw error;
+      // this.logger.warn('Failed to initialize DynamoDB tables:', error);
+      // throw error;
+      this.logger.warn('Failed to initialize DynamoDB tables. Service will continue without DynamoDB support:', error.message || error);
+      this.logger.warn('DynamoDB features will be disabled. Service will use PostgreSQL and Redis only.');
+      // Don't throw - allow service to start without DynamoDB
+      // DynamoDB is optional for hot data caching
     }
   }
 
