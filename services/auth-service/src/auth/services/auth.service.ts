@@ -3,10 +3,11 @@ import {
   Logger,
   UnauthorizedException,
   ConflictException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../../users/services/user.service';
-import { UserRoles } from '@mediamesh/shared';
+import { UserRoles, UserDto } from '@mediamesh/shared';
 import { LoginDto, RegisterDto, TokenResponseDto } from '@mediamesh/shared';
 import { JWT_CONFIG } from '../../config/env.constants';
 
@@ -146,6 +147,29 @@ export class AuthService {
       return payload;
     } catch (error) {
       return null;
+    }
+  }
+
+  /**
+   * Get user by ID (for /auth/me endpoint)
+   */
+  async getUserById(userId: string): Promise<UserDto> {
+    try {
+      const user = await this.userService.findById(userId);
+      return {
+        id: user.id,
+        email: user.email,
+        role: user.role as any,
+        firstName: '', // TODO: Add firstName to User model
+        lastName: '', // TODO: Add lastName to User model
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new UnauthorizedException('User not found');
+      }
+      throw error;
     }
   }
 }
