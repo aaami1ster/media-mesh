@@ -18,6 +18,12 @@ export const DATABASE_URL =
   process.env.DATABASE_URL ||
   `postgresql://${DB_CONFIG.USERNAME}:${DB_CONFIG.PASSWORD}@${DB_CONFIG.HOST}:${DB_CONFIG.PORT}/${DB_CONFIG.DATABASE}?schema=public`;
 
+// JWT configuration (must match auth-service secret)
+export const JWT_CONFIG = {
+  SECRET: process.env.JWT_SECRET || 'your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits',
+  EXPIRATION_STRING: process.env.JWT_EXPIRATION_STRING || '24h',
+};
+
 // Server configuration
 export const SERVER_CONFIG = {
   PORT: parseInt(process.env.PORT || '8004', 10),

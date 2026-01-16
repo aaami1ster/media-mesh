@@ -36,6 +36,12 @@ export const YOUTUBE_CONFIG = {
   MAX_RESULTS: parseInt(process.env.YOUTUBE_MAX_RESULTS || '50', 10),
 };
 
+// JWT configuration (must match auth-service secret)
+export const JWT_CONFIG = {
+  SECRET: process.env.JWT_SECRET || 'your-secret-key-change-this-in-production-use-a-long-random-string-at-least-256-bits',
+  EXPIRATION_STRING: process.env.JWT_EXPIRATION_STRING || '24h',
+};
+
 // Ingest configuration
 export const INGEST_CONFIG = {
   MAX_RETRIES: parseInt(process.env.MAX_RETRIES || '3', 10),

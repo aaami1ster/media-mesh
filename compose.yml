@@ -57,6 +57,23 @@ services:
     networks:
       - mediamesh-network
 
+  # DynamoDB Local for Development
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: mediamesh-dynamodb-local
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - mediamesh-network
+
   # Kafka Broker for Event Streaming
   broker:
     image: confluentinc/cp-kafka:7.6.0
@@ -101,7 +118,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     restart: unless-stopped
     ports:
-      - "8090:8080"  # Host port 8090 maps to container port 8080
+      - "8090:8080" # Host port 8090 maps to container port 8080
     depends_on:
       broker:
         condition: service_healthy

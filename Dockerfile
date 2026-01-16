@@ -16,6 +16,25 @@ COPY services ./services
 # Install dependencies
 RUN npm ci
 
+# Generate Prisma clients for all services that use Prisma
+# This must happen before building the services
+# Each service generates its own Prisma client
+WORKDIR /app/services/auth-service
+RUN npm run prisma:generate
+WORKDIR /app/services/cms-service
+RUN npm run prisma:generate
+WORKDIR /app/services/metadata-service
+RUN npm run prisma:generate
+WORKDIR /app/services/media-service
+RUN npm run prisma:generate
+WORKDIR /app/services/ingest-service
+RUN npm run prisma:generate
+WORKDIR /app/services/discovery-service
+RUN npm run prisma:generate
+WORKDIR /app/services/search-service
+RUN npm run prisma:generate
+WORKDIR /app
+
 # Build all services
 RUN npm run build
 
@@ -24,8 +43,10 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install curl and wget for health checks
-RUN apk add --no-cache curl wget
+# Install curl, wget, and OpenSSL for health checks and Prisma
+# Prisma query engine requires OpenSSL libraries
+# Note: Prisma will use OpenSSL 3.0 binary if available (from binaryTargets in schema)
+RUN apk add --no-cache curl wget openssl
 
 # Copy package files and workspace structure for npm to resolve dependencies
 COPY package*.json ./
@@ -48,6 +69,12 @@ COPY services/search-service/package.json ./services/search-service/package.json
 # Install production dependencies (npm workspaces will resolve all workspace dependencies)
 RUN npm ci --only=production && npm cache clean --force
 
+# Copy Prisma schemas and generated clients for services that use Prisma
+# Note: In npm workspaces, Prisma generates to root node_modules/.prisma
+# Copy the entire .prisma directory structure including query engine binaries
+# This must happen AFTER npm ci to avoid overwriting
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
 # Copy built applications (dist only) from builder stage
 # Copy each service's dist directory
 COPY --from=builder /app/services/api-gateway-discovery/dist ./services/api-gateway-discovery/dist
@@ -61,6 +88,21 @@ COPY --from=builder /app/services/discovery-service/dist ./services/discovery-se
 COPY --from=builder /app/services/search-service/dist ./services/search-service/dist
 # Copy shared module dist (package.json main field points to dist/index.js)
 COPY --from=builder /app/shared/dist ./shared/dist
+
+# Copy Prisma schemas and generated clients for services that use Prisma
+# Note: In npm workspaces, Prisma generates to root node_modules/.prisma
+# Copy the entire .prisma directory structure including query engine binaries
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Also ensure @prisma/client package is available (should be in node_modules from npm ci)
+
+# Copy Prisma schema files
+COPY --from=builder /app/services/auth-service/prisma ./services/auth-service/prisma
+COPY --from=builder /app/services/cms-service/prisma ./services/cms-service/prisma
+COPY --from=builder /app/services/metadata-service/prisma ./services/metadata-service/prisma
+COPY --from=builder /app/services/media-service/prisma ./services/media-service/prisma
+COPY --from=builder /app/services/ingest-service/prisma ./services/ingest-service/prisma
+COPY --from=builder /app/services/discovery-service/prisma ./services/discovery-service/prisma
+COPY --from=builder /app/services/search-service/prisma ./services/search-service/prisma
 
 # Set environment variables
 ENV NODE_ENV=production
