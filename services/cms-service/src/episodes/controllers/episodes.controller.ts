@@ -34,13 +34,37 @@ import { UserRole } from '@mediamesh/shared';
 /**
  * Create Episode DTO (for request body)
  */
+import { IsString, IsUUID, IsInt, Min, IsOptional, IsEnum, MinLength, MaxLength } from 'class-validator';
+
 class CreateEpisodeDto {
+  @IsUUID()
   programId: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
   title: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
   description?: string;
+
+  @IsInt()
+  @Min(1)
   episodeNumber: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   duration?: number;
+
+  @IsOptional()
+  @IsEnum(ContentStatus)
   status?: ContentStatus;
+
+  @IsOptional()
+  @IsUUID()
   metadataId?: string;
 }
 
