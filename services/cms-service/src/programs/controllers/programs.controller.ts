@@ -228,6 +228,7 @@ export class ProgramsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.EDITOR)
   @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Publish program (DRAFT -> PUBLISHED)' })
   @ApiParam({ name: 'id', type: String, description: 'Program ID' })
   @ApiResponse({
@@ -269,6 +270,7 @@ export class ProgramsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.EDITOR)
   @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Unpublish program (PUBLISHED -> DRAFT)' })
   @ApiParam({ name: 'id', type: String, description: 'Program ID' })
   @ApiResponse({

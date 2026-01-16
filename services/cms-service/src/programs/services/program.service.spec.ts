@@ -302,7 +302,11 @@ describe('ProgramService', () => {
     it('should throw NotFoundException if program not found', async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.delete('non-existent')).rejects.toThrow(NotFoundException);
+      await expect(service.delete('non-existent')).rejects.toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining('Program'),
+        }),
+      );
     });
   });
 

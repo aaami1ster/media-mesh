@@ -219,7 +219,10 @@ describe('EpisodesController (integration)', () => {
       const createDto = {
         programId: 'program-1',
         title: 'New Episode',
+        description: 'Episode description',
         episodeNumber: 1,
+        duration: 3600,
+        status: ContentStatus.DRAFT,
       };
 
       programRepository.findById.mockResolvedValue(mockProgram);
@@ -248,7 +251,10 @@ describe('EpisodesController (integration)', () => {
         .send({
           programId: 'non-existent',
           title: 'Episode',
+          description: 'Episode description',
           episodeNumber: 1,
+          duration: 3600,
+          status: ContentStatus.DRAFT,
         })
         .expect(404);
     });
@@ -263,7 +269,10 @@ describe('EpisodesController (integration)', () => {
         .send({
           programId: 'program-1',
           title: 'Episode',
+          description: 'Episode description',
           episodeNumber: 1,
+          duration: 3600,
+          status: ContentStatus.DRAFT,
         })
         .expect(409);
     });
