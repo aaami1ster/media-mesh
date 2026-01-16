@@ -1,0 +1,47 @@
+// Prisma Schema for Discovery Service
+// Database: discovery_db (read-only replica or cache)
+// Note: This service reads from the same database as CMS service
+// In production, this would be a read replica
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// These models match the CMS service schema for read access
+model Program {
+  id          String    @id
+  title       String
+  description String?
+  status      String    @default("DRAFT")
+  metadataId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  @@map("programs")
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Episode {
+  id            String    @id
+  programId     String
+  title         String
+  description   String?
+  episodeNumber Int
+  duration      Int?
+  status        String    @default("DRAFT")
+  metadataId    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("episodes")
+  @@index([programId])
+  @@index([status])
+  @@index([episodeNumber])
+}
