@@ -90,7 +90,13 @@ export class DynamoDBSearchRepository implements OnModuleInit {
       this.logger.debug(`Indexed content in DynamoDB: ${data.contentId}`);
       return new SearchIndex({
         id: data.contentId, // Use contentId as ID for DynamoDB
-        ...item,
+        contentId: item.contentId,
+        contentType: item.contentType,
+        title: item.title,
+        description: item.description ?? undefined,
+        category: item.category ?? undefined,
+        language: item.language ?? undefined,
+        tags: item.tags,
         indexedAt: now,
         updatedAt: now,
       });
