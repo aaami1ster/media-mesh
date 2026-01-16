@@ -302,7 +302,7 @@ Export all constants.
 ```
 Create auth-service in services/auth-service/:
 - NestJS application structure
-- Database connection to auth_db (TypeORM or Prisma)
+- Database connection to auth_db (Prisma)
 - User entity with: id, email, password (hashed), role, createdAt, updatedAt
 - User repository/service
 - Install @nestjs/jwt, @nestjs/passport, bcrypt, passport-jwt
@@ -394,7 +394,7 @@ Create cms-service in services/cms-service/:
 - Database connection to cms_db
 - Program entity: id, title, description, status (draft/published), createdAt, updatedAt, publishedAt
 - Episode entity: id, programId (FK), title, description, episodeNumber, duration, status, createdAt, updatedAt
-- Install TypeORM or Prisma
+- Install Prisma
 ```
 
 ### Step 4.2: Program & Episode Entities
@@ -480,7 +480,7 @@ Create metadata-service in services/metadata-service/:
 - NestJS application structure
 - Database connection to metadata_db
 - Metadata entity: id, title, description, category, language, duration, publishDate, contentId, contentType (program/episode), createdAt, updatedAt
-- Install TypeORM or Prisma
+- Install Prisma
 ```
 
 ### Step 5.2: Metadata Entity & Schema
