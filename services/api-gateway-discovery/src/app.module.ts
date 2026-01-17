@@ -9,27 +9,24 @@ import { AppService } from './app.service';
 import { ProxyModule } from './proxy/proxy.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { REDIS_CONFIG, RATE_LIMIT_CONFIG, GRAPHQL_CONFIG } from './config/env.constants';
-// import { RedisModule, RedisToken } from '@nestjs-redis/client';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { Redis } from 'ioredis';
 import { ThrottlerIPGuard } from './throttler/throttler-ip.guard';
+import { ThrottlerDefaultGuard } from './throttler/throttler-default.guard';
 
 @Module({
   imports: [
-    // Redis client for throttler storage
-    // RedisModule.forRoot({
-    //   isGlobal: true,
-    //   options: {
-    //     url: REDIS_CONFIG.PASSWORD
-    //       ? `redis://:${REDIS_CONFIG.PASSWORD}@${REDIS_CONFIG.HOST}:${REDIS_CONFIG.PORT}/${REDIS_CONFIG.DB}`
-    //       : `redis://${REDIS_CONFIG.HOST}:${REDIS_CONFIG.PORT}/${REDIS_CONFIG.DB}`,
-    //   },
-    // }),
     // Rate limiting with Redis storage
-    ThrottlerModule.forRootAsync({
-      useFactory: () => {
-        // Create ioredis client for throttler storage
-        const redisClient = new Redis({
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          name: 'default',
+          ttl: RATE_LIMIT_CONFIG.DEFAULT_TTL * 1000, // milliseconds
+          limit: RATE_LIMIT_CONFIG.DEFAULT_LIMIT,
+        },
+      ],
+      storage: new ThrottlerStorageRedisService(
+        new Redis({
           host: REDIS_CONFIG.HOST,
           port: REDIS_CONFIG.PORT,
           password: REDIS_CONFIG.PASSWORD || undefined,
@@ -38,19 +35,8 @@ import { ThrottlerIPGuard } from './throttler/throttler-ip.guard';
             const delay = Math.min(times * 50, 2000);
             return delay;
           },
-        });
-
-        return {
-          throttlers: [
-            {
-              name: 'default',
-              ttl: RATE_LIMIT_CONFIG.DEFAULT_TTL * 1000, // milliseconds
-              limit: RATE_LIMIT_CONFIG.DEFAULT_LIMIT,
-            },
-          ],
-          storage: new ThrottlerStorageRedisService(redisClient) as any,
-        };
-      },
+        })
+      ) as any,
     }),
     // GraphQL setup with code-first approach
     GraphQLModule.forRoot<ApolloDriverConfig>({
@@ -80,7 +66,7 @@ import { ThrottlerIPGuard } from './throttler/throttler-ip.guard';
     // Global guard is kept for fallback
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: ThrottlerDefaultGuard,
     },
   ],
 })

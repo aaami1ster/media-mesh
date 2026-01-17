@@ -20,7 +20,6 @@
   "dependencies": {
     "@mediamesh/shared": "*",
     "@nest-lab/throttler-storage-redis": "^1.1.0",
-    "@nestjs-redis/client": "^0.11.2",
     "@nestjs/axios": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",

@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard, seconds } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-// import { RedisModule, RedisToken } from '@nestjs-redis/client';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { Redis } from 'ioredis';
 import { AppController } from './app.controller';
@@ -13,43 +12,27 @@ import { ThrottlerDefaultGuard } from './throttler/throttler-default.guard';
 
 @Module({
   imports: [
-    // Redis client for throttler storage
-    // RedisModule.forRoot({
-    //   isGlobal: true,
-    //   options: {
-    //     url: REDIS_CONFIG.PASSWORD
-    //       ? `redis://:${REDIS_CONFIG.PASSWORD}@${REDIS_CONFIG.HOST}:${REDIS_CONFIG.PORT}/${REDIS_CONFIG.DB}`
-    //       : `redis://${REDIS_CONFIG.HOST}:${REDIS_CONFIG.PORT}/${REDIS_CONFIG.DB}`,
-    //   },
-    // }),
     // Rate limiting with Redis storage
     ThrottlerModule.forRoot({
-      // useFactory: () => {
-        // Create ioredis client for throttler storage
-        // const redisClient = ;
-
-        // return {
-          throttlers: [
-            {
-              name: 'default',
-              ttl: RATE_LIMIT_CONFIG.DEFAULT_TTL * 1000, // milliseconds
-              limit: RATE_LIMIT_CONFIG.DEFAULT_LIMIT,
-            },
-          ],
-          storage: new ThrottlerStorageRedisService(
-            new Redis({
-              host: REDIS_CONFIG.HOST,
-              port: REDIS_CONFIG.PORT,
-              password: REDIS_CONFIG.PASSWORD || undefined,
-              db: REDIS_CONFIG.DB,
-              retryStrategy: (times) => {
-                const delay = Math.min(times * 50, 2000);
-                return delay;
-              },
-            })
-          ) as any,
-        // };
-      // },
+      throttlers: [
+        {
+          name: 'default',
+          ttl: RATE_LIMIT_CONFIG.DEFAULT_TTL * 1000, // milliseconds
+          limit: RATE_LIMIT_CONFIG.DEFAULT_LIMIT,
+        },
+      ],
+      storage: new ThrottlerStorageRedisService(
+        new Redis({
+          host: REDIS_CONFIG.HOST,
+          port: REDIS_CONFIG.PORT,
+          password: REDIS_CONFIG.PASSWORD || undefined,
+          db: REDIS_CONFIG.DB,
+          retryStrategy: (times) => {
+            const delay = Math.min(times * 50, 2000);
+            return delay;
+          },
+        })
+      ) as any,
     }),
     AuthModule,
     ProxyModule,
